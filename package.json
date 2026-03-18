@@ -1,0 +1,8 @@
+{
+  "name": "menupost-ai",
+  "version": "1.0.0",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "node-fetch": "^2.7.0"
+  }
+}

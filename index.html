@@ -1,0 +1,2421 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<!-- ═══ SEO ═══ -->
+<title>Онлайн меню ресторана | MenuPost AI — Меню, Menyu, Menu QR</title>
+<meta name="description" content="Онлайн меню для ресторанов и кафе Узбекистана. Создайте красивое меню с QR-кодом за 5 минут. Menyu, menu, меню — сканируй QR и заказывай!"/>
+<meta name="keywords" content="меню, menyu, menu, онлайн меню, ресторан меню, кафе меню, QR меню, меню ресторана Узбекистан, menyu Uzbekiston, online menyu, QR code menyu, ресторан Ташкент меню, кафе меню онлайн"/>
+<meta name="author" content="MenuPost AI"/>
+<meta name="robots" content="index, follow"/>
+<link rel="canonical" href="https://restoran-menyu.netlify.app/"/>
+
+<!-- Google Verification -->
+<meta name="google-site-verification" content="lmpI3XcG5Gjb0oRp1Y-7dm3lHdfbITWrZRcOol-U35E"/>
+
+<!-- Open Graph (WhatsApp, Telegram, Facebook да чиройли кўринади) -->
+<meta property="og:title" content="Онлайн меню — MenuPost AI"/>
+<meta property="og:description" content="Ресторан ва кафелар учун онлайн меню + QR код. Menyu, menu, меню — телефондан сканерла!"/>
+<meta property="og:url" content="https://restoran-menyu.netlify.app/"/>
+<meta property="og:type" content="website"/>
+<meta property="og:locale" content="ru_RU"/>
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Онлайн меню — MenuPost AI"/>
+<meta name="twitter:description" content="Ресторан ва кафелар учун онлайн меню + QR код. Menyu, menu, меню!"/>
+
+<!-- Schema.org structured data — Google тушунади -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "MenuPost AI — Онлайн меню",
+  "url": "https://restoran-menyu.netlify.app/",
+  "description": "Ресторан ва кафелар учун онлайн меню платформаси. QR код билан меню, заказ қилиш, Telegram уведомление.",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "5",
+    "priceCurrency": "USD"
+  },
+  "inLanguage": ["ru", "uz", "en"],
+  "keywords": "меню, menyu, menu, онлайн меню, QR меню, ресторан"
+}
+</script>
+
+<title>Онлайн меню ресторана | MenuPost AI — Меню, Menyu, Menu QR</title>
+<link id="favicon" rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a0a0a'/><text x='16' y='22' text-anchor='middle' font-size='18' font-family='serif'>🍽</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<style>
+:root{
+  --bg:#0a0a0a;--bg2:#111111;--bg3:#1a1a1a;
+  --border:rgba(255,255,255,0.08);
+  --accent:#e8a045;--accent2:#f5c07a;
+  --text:#f0ede8;--muted:#888880;
+  --green:#4caf7d;--red:#e05555;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:"DM Sans",sans-serif;min-height:100vh;overflow-x:hidden;}
+
+nav{position:sticky;top:0;z-index:200;background:rgba(10,10,10,0.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 1.2rem;display:flex;align-items:center;height:54px;}
+.logo{font-family:"Playfair Display",serif;font-size:1.15rem;font-weight:700;color:var(--accent);margin-right:1.5rem;white-space:nowrap;flex-shrink:0;}
+.logo span{color:var(--text);}
+.nav-tabs{display:flex;flex:1;overflow-x:auto;}
+.nav-tab{padding:0 13px;height:54px;display:flex;align-items:center;font-size:12px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;font-family:"DM Sans",sans-serif;}
+.nav-tab:hover{color:var(--text);}.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.nav-badge{font-size:11px;background:rgba(232,160,69,0.15);color:var(--accent);padding:3px 10px;border-radius:20px;}
+.nav-btn{background:var(--accent);color:#000;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:"DM Sans",sans-serif;}
+
+.page{display:none;padding:1.5rem;max-width:960px;margin:0 auto;}.page.active{display:block;}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.4rem;margin-bottom:1rem;}
+.card-title{font-family:"Playfair Display",serif;font-size:1.25rem;margin-bottom:.25rem;}
+.card-sub{font-size:13px;color:var(--muted);margin-bottom:1.1rem;}
+
+.form-row{display:grid;gap:11px;margin-bottom:11px;}.form-2{grid-template-columns:1fr 1fr;}
+.fg{display:flex;flex-direction:column;gap:5px;}.fg.full{grid-column:1/-1;}
+label{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;}
+input,select,textarea{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:"DM Sans",sans-serif;font-size:13px;padding:8px 11px;outline:none;transition:border-color .2s;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:rgba(232,160,69,.5);}
+textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
+
+.btn{border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:500;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .2s;}
+.btn-accent{background:var(--accent);color:#000;}.btn-accent:hover{background:var(--accent2);}
+.btn-accent:disabled{opacity:.4;cursor:not-allowed;}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border);}
+.btn-outline:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.btn-danger{background:rgba(224,85,85,.12);color:var(--red);border:1px solid rgba(224,85,85,.25);}
+.btn-green{background:rgba(76,175,125,.12);color:var(--green);border:1px solid rgba(76,175,125,.25);}
+.btn-full{width:100%;padding:11px;}
+
+.lang-row{display:flex;gap:7px;}
+.lang-btn{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:7px;font-size:12px;cursor:pointer;transition:all .2s;font-family:"DM Sans",sans-serif;}
+.lang-btn.active{background:rgba(232,160,69,.12);border-color:rgba(232,160,69,.4);color:var(--accent);}
+
+.output-box{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1.1rem;min-height:120px;margin-top:11px;}
+.output-text{font-size:13px;line-height:1.8;white-space:pre-wrap;}
+.output-actions{display:flex;gap:8px;margin-top:9px;justify-content:flex-end;}
+
+.loading{display:none;align-items:center;gap:7px;color:var(--muted);font-size:12px;padding:.8rem 0;}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:pulse 1.2s ease-in-out infinite;}
+.dot:nth-child(2){animation-delay:.2s;}.dot:nth-child(3){animation-delay:.4s;}
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(1);}50%{opacity:1;transform:scale(1.3);}}
+
+.restaurant-list{display:grid;gap:9px;}
+.restaurant-item{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:.9rem 1.1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.restaurant-name{font-weight:500;font-size:14px;}.restaurant-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.restaurant-actions{display:flex;gap:7px;flex-wrap:wrap;}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;}
+.badge-green{background:rgba(76,175,125,.15);color:var(--green);}
+.badge-frozen{background:rgba(100,160,255,.15);color:#64a0ff;border:1px solid rgba(100,160,255,.25);}
+
+.menu-editor{display:none;}.menu-editor.active{display:block;}
+.back-btn{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:13px;cursor:pointer;margin-bottom:1rem;background:none;border:none;font-family:"DM Sans",sans-serif;}
+.back-btn:hover{color:var(--text);}
+.category-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:1rem;}
+.cat-tab{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 13px;font-size:12px;cursor:pointer;transition:all .2s;color:var(--muted);font-family:"DM Sans",sans-serif;}
+.cat-tab.active{background:rgba(232,160,69,.12);border-color:rgba(232,160,69,.4);color:var(--accent);}
+
+.dish-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:11px;}
+.dish-card-admin{background:var(--bg2);border:1px solid var(--border);border-radius:11px;overflow:hidden;}
+.dish-img-admin{height:130px;background:var(--bg3);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
+.dish-img-admin img{width:100%;height:100%;object-fit:cover;display:block;}
+.dish-img-placeholder{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
+.dish-info-admin{padding:9px 11px;}.dish-name-admin{font-size:13px;font-weight:500;margin-bottom:2px;}
+.dish-price-admin{font-size:12px;color:var(--accent);}
+.dish-actions-admin{display:flex;gap:5px;padding:0 9px 9px;}
+
+.qr-box{background:var(--bg3);border:1px solid var(--border);border-radius:11px;padding:1.4rem;text-align:center;}
+
+/* ═══════════════════════════════
+   PUBLIC MENU — PREMIUM REDESIGN
+═══════════════════════════════ */
+.public-menu{display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;overflow-y:auto;}
+.public-menu.show{display:block;}
+
+/* Hero banner */
+.pm-hero{position:relative;min-height:220px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;}
+.pm-hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,#0a0a0a 0%,#1a1205 50%,#0a0a0a 100%);}
+.pm-hero-pattern{position:absolute;inset:0;opacity:.07;background-image:radial-gradient(circle at 20% 80%,var(--accent) 1px,transparent 1px),radial-gradient(circle at 80% 20%,var(--accent) 1px,transparent 1px),radial-gradient(circle at 50% 50%,var(--accent) 0.5px,transparent 0.5px);background-size:40px 40px,60px 60px,25px 25px;}
+.pm-hero-glow{position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:300px;height:300px;background:radial-gradient(ellipse,rgba(232,160,69,.15) 0%,transparent 70%);pointer-events:none;}
+.pm-hero-content{position:relative;z-index:2;padding:1.8rem 1.4rem 1.4rem;}
+.pm-logo-wrap{display:flex;align-items:center;gap:14px;margin-bottom:.7rem;}
+.pm-logo-img{width:60px;height:60px;border-radius:14px;object-fit:cover;border:2px solid rgba(232,160,69,.3);flex-shrink:0;}
+.pm-logo-initials{width:60px;height:60px;border-radius:14px;background:linear-gradient(135deg,rgba(232,160,69,.2),rgba(232,160,69,.05));border:2px solid rgba(232,160,69,.3);display:flex;align-items:center;justify-content:center;font-family:"Playfair Display",serif;font-size:1.4rem;font-weight:700;color:var(--accent);flex-shrink:0;}
+.pm-rest-name{font-family:"Playfair Display",serif;font-size:1.6rem;font-weight:900;line-height:1.1;}
+.pm-rest-meta{font-size:12px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pm-rest-meta span{display:flex;align-items:center;gap:4px;}
+
+/* Cart floating button */
+.pm-cart-fab{position:fixed;bottom:1.5rem;right:1.4rem;z-index:1100;background:var(--accent);color:#000;border:none;border-radius:50px;padding:12px 20px;font-size:13px;font-weight:700;font-family:"DM Sans",sans-serif;cursor:pointer;box-shadow:0 4px 24px rgba(232,160,69,.4);display:none;align-items:center;gap:8px;transition:all .3s;transform:translateY(0);}
+.pm-cart-fab.show{display:flex;}
+.pm-cart-fab:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(232,160,69,.5);}
+.cart-count-badge{background:#000;color:var(--accent);border-radius:50%;width:20px;height:20px;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+
+/* Category pills */
+.pm-cats{display:flex;gap:7px;overflow-x:auto;padding:.9rem 1.4rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(10,10,10,.97);backdrop-filter:blur(20px);z-index:10;}
+.pm-cats::-webkit-scrollbar{display:none;}
+.pm-cat{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 16px;font-size:12px;cursor:pointer;white-space:nowrap;color:var(--muted);font-family:"DM Sans",sans-serif;transition:all .2s;flex-shrink:0;}
+.pm-cat:hover{color:var(--text);}
+.pm-cat.active{background:rgba(232,160,69,.15);border-color:rgba(232,160,69,.5);color:var(--accent);font-weight:500;}
+
+.pm-content{padding:1rem 1.4rem 6rem;}
+.pm-section-title{font-family:"Playfair Display",serif;font-size:1.1rem;margin:1.4rem 0 .9rem;display:flex;align-items:center;gap:10px;}
+.pm-section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* Dish cards — premium */
+.pm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
+.pm-dish{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .25s;position:relative;}
+.pm-dish:hover{transform:translateY(-3px);border-color:rgba(232,160,69,.25);box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.pm-dish-img{height:120px;background:var(--bg3);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
+.pm-dish-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s;}
+.pm-dish:hover .pm-dish-img img{transform:scale(1.05);}
+.pm-dish-badge{position:absolute;top:7px;left:7px;background:rgba(232,160,69,.9);color:#000;font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;letter-spacing:.03em;}
+.pm-dish-info{padding:10px 11px 11px;}
+.pm-dish-name{font-size:12.5px;font-weight:600;margin-bottom:3px;line-height:1.3;}
+.pm-dish-price{font-size:13px;color:var(--accent);font-weight:700;}
+.pm-dish-desc{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.pm-dish-add{position:absolute;bottom:10px;right:10px;width:28px;height:28px;background:var(--accent);color:#000;border:none;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:700;line-height:1;transition:all .2s;opacity:0;}
+.pm-dish:hover .pm-dish-add{opacity:1;}
+.pm-dish-qty{position:absolute;bottom:8px;right:8px;display:none;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 5px;}
+.pm-dish-qty.show{display:flex;}
+.qty-btn{width:22px;height:22px;background:var(--bg3);border:none;color:var(--text);border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;font-family:"DM Sans",sans-serif;}
+.qty-btn:hover{background:var(--accent);color:#000;}
+.qty-num{font-size:12px;font-weight:600;min-width:14px;text-align:center;}
+
+/* Dish detail overlay */
+.dish-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:2500;align-items:flex-end;justify-content:center;padding:0;}
+.dish-overlay.show{display:flex;}
+.dish-detail{background:var(--bg2);border-radius:22px 22px 0 0;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding-bottom:1rem;}
+.dd-img{height:240px;background:var(--bg3);overflow:hidden;border-radius:22px 22px 0 0;}
+.dd-img img{width:100%;height:100%;object-fit:cover;}
+.dd-body{padding:1.4rem;}
+.dd-name{font-family:"Playfair Display",serif;font-size:1.3rem;font-weight:700;margin-bottom:.4rem;}
+.dd-price{font-size:1.1rem;color:var(--accent);font-weight:700;margin-bottom:.7rem;}
+.dd-desc{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:1.2rem;}
+.dd-actions{display:flex;align-items:center;gap:12px;}
+.dd-qty-wrap{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:8px 14px;}
+.dd-qty-btn{width:28px;height:28px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;font-family:"DM Sans",sans-serif;}
+.dd-qty-btn:hover{background:var(--accent);color:#000;border-color:var(--accent);}
+.dd-qty-num{font-size:15px;font-weight:600;min-width:20px;text-align:center;}
+.dd-close{position:absolute;top:1rem;right:1rem;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;width:34px;height:34px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;}
+
+/* CART MODAL */
+.cart-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;align-items:flex-end;justify-content:center;}
+.cart-modal.show{display:flex;}
+.cart-box{background:var(--bg2);border-radius:22px 22px 0 0;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.cart-header{padding:1.2rem 1.4rem .8rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:2;}
+.cart-title{font-family:"Playfair Display",serif;font-size:1.15rem;font-weight:700;}
+.cart-close{background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;}
+.cart-items{padding:.8rem 1.4rem;}
+.cart-item{display:flex;align-items:center;gap:12px;padding:.7rem 0;border-bottom:1px solid var(--border);}
+.cart-item:last-child{border-bottom:none;}
+.ci-img{width:48px;height:48px;border-radius:10px;background:var(--bg3);overflow:hidden;flex-shrink:0;}
+.ci-img img{width:100%;height:100%;object-fit:cover;}
+.ci-info{flex:1;}
+.ci-name{font-size:13px;font-weight:500;}
+.ci-price{font-size:12px;color:var(--accent);margin-top:2px;}
+.ci-qty{display:flex;align-items:center;gap:7px;}
+.ci-qty-btn{width:24px;height:24px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:"DM Sans",sans-serif;}
+.ci-qty-btn:hover{background:var(--accent);color:#000;border-color:var(--accent);}
+.ci-qty-num{font-size:13px;font-weight:600;min-width:18px;text-align:center;}
+.cart-total{padding:1rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.cart-total-label{font-size:12px;color:var(--muted);}
+.cart-total-price{font-family:"Playfair Display",serif;font-size:1.3rem;font-weight:700;color:var(--accent);}
+.cart-footer{padding:0 1.4rem 1.4rem;}
+
+/* Phone input step */
+.phone-step{display:none;padding:1rem 1.4rem 1.4rem;}
+.phone-step.show{display:block;}
+.phone-step-title{font-family:"Playfair Display",serif;font-size:1.1rem;margin-bottom:.3rem;}
+.phone-step-sub{font-size:12px;color:var(--muted);margin-bottom:1rem;}
+.phone-input-wrap{position:relative;}
+.phone-prefix{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);}
+.phone-input-wrap input{padding-left:40px;}
+
+/* ═══════════════════════════════
+   MODALS
+═══════════════════════════════ */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:15px;padding:1.4rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:"Playfair Display",serif;font-size:1.15rem;margin-bottom:.9rem;}
+.modal-close{float:right;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;margin-top:-3px;}
+
+.pw-gate{position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(14px);z-index:3000;display:none;align-items:center;justify-content:center;}
+.pw-gate.show{display:flex;}
+.pw-box{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:2rem 1.8rem;width:100%;max-width:340px;text-align:center;}
+.pw-title{font-family:"Playfair Display",serif;font-size:1.2rem;margin-bottom:.3rem;}
+.pw-sub{font-size:12px;color:var(--muted);margin-bottom:1rem;}
+.pw-badge{font-size:12px;color:var(--accent);font-weight:500;margin-bottom:1rem;padding:5px 14px;background:rgba(232,160,69,.1);border:1px solid rgba(232,160,69,.2);border-radius:8px;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pw-err{font-size:12px;color:var(--red);margin-top:7px;min-height:18px;}
+.pw-inp{margin-bottom:4px;}
+.pw-inp input{text-align:center;font-size:15px;letter-spacing:3px;}
+
+.pw-strength{display:flex;gap:4px;margin-top:7px;}
+.pw-bar{flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .3s;}
+.pw-bar.weak{background:var(--red);}.pw-bar.med{background:var(--accent);}.pw-bar.strong{background:var(--green);}
+
+/* PHOTO UPLOAD ZONE */
+.photo-zone{border:1.5px dashed var(--border);border-radius:10px;cursor:pointer;overflow:hidden;position:relative;height:140px;display:flex;align-items:center;justify-content:center;background:var(--bg3);transition:all .2s;}
+.photo-zone:hover{border-color:rgba(232,160,69,.5);background:rgba(232,160,69,.03);}
+.photo-zone img{width:100%;height:100%;object-fit:cover;display:none;}
+.pz-hint{display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;}
+.pz-icon{width:42px;height:42px;border:1.5px solid rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.pz-text{font-size:12px;color:var(--muted);}
+.pz-sub{font-size:10px;color:var(--muted);}
+.pz-remove{position:absolute;top:7px;right:7px;background:rgba(0,0,0,.75);border:none;color:#fff;border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1;z-index:2;}
+
+.upload-wrap{margin-top:9px;display:none;}
+.upload-wrap.show{display:block;}
+.upload-track{height:4px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:5px;}
+.upload-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .3s;width:0%;}
+.upload-label{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;}
+
+/* LOGO UPLOAD */
+.logo-zone{border:1.5px dashed var(--border);border-radius:14px;cursor:pointer;overflow:hidden;position:relative;height:100px;display:flex;align-items:center;justify-content:center;background:var(--bg3);transition:all .2s;}
+.logo-zone:hover{border-color:rgba(232,160,69,.5);}
+.logo-zone img{width:100%;height:100%;object-fit:cover;display:none;}
+
+/* LANDING */
+.hero-section{text-align:center;padding:3.5rem 1.5rem 1.5rem;}
+.hero-badge{display:inline-block;background:rgba(232,160,69,.12);border:1px solid rgba(232,160,69,.3);color:var(--accent2);font-size:11px;padding:4px 13px;border-radius:20px;margin-bottom:1.1rem;letter-spacing:.06em;text-transform:uppercase;}
+.hero-h1{font-family:"Playfair Display",serif;font-size:clamp(1.8rem,5vw,3rem);font-weight:900;line-height:1.15;margin-bottom:.9rem;}
+.hero-h1 em{font-style:normal;color:var(--accent);}
+.hero-p{font-size:.95rem;color:var(--muted);line-height:1.7;max-width:500px;margin:0 auto 1.8rem;}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:11px;margin:1.5rem 0;}
+.feat-card{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:1.1rem;}
+.feat-title{font-size:13px;font-weight:500;margin-bottom:4px;}
+.feat-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+.price-big{background:var(--bg2);border:1px solid rgba(232,160,69,.3);border-radius:18px;padding:1.8rem;text-align:center;max-width:380px;margin:1.5rem auto;}
+.price-amount{font-family:"Playfair Display",serif;font-size:2.8rem;font-weight:900;color:var(--accent);}
+.price-sub{color:var(--muted);font-size:12px;margin:.4rem 0 1.3rem;}
+.price-list{text-align:left;list-style:none;margin-bottom:1.3rem;display:flex;flex-direction:column;gap:7px;}
+.price-list li{font-size:13px;display:flex;align-items:center;gap:8px;}
+.price-list li::before{content:"✓";color:var(--accent);font-weight:700;}
+
+/* ── ORDER STATUS NOTIFICATION ── */
+.order-notif{
+  position:fixed;
+  bottom:2rem;
+  right:1.4rem;
+  z-index:9000;
+  min-width:260px;
+  max-width:320px;
+  border-radius:16px;
+  padding:1rem 1.2rem;
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  transform:translateX(120%);
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+}
+.order-notif.show{transform:translateX(0);}
+.order-notif.loading{background:#1a1a1a;border:1px solid rgba(255,255,255,.1);}
+.order-notif.accepted{background:linear-gradient(135deg,#0d2e1a,#1a3d24);border:1px solid rgba(76,175,125,.4);}
+.order-notif.rejected{background:linear-gradient(135deg,#2e0d0d,#3d1a1a);border:1px solid rgba(224,85,85,.4);}
+.notif-icon{font-size:1.8rem;flex-shrink:0;line-height:1;}
+.notif-body{flex:1;}
+.notif-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+.notif-sub{font-size:11px;color:var(--muted);line-height:1.5;}
+.notif-spinner{width:28px;height:28px;border:3px solid rgba(232,160,69,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;margin-top:2px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:.75rem 1.1rem;font-size:13px;z-index:9999;transform:translateY(100px);opacity:0;transition:all .3s;max-width:300px;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+#appLoader{position:fixed;inset:0;background:var(--bg);z-index:8000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s;}
+#appLoader.hide{opacity:0;pointer-events:none;}
+
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+
+/* MOBILE */
+@media(max-width:580px){
+  .form-2{grid-template-columns:1fr;}
+  nav{padding:0 .6rem;}
+  .nav-tab{padding:0 7px;font-size:10px;}
+  .nav-badge{display:none;}
+  .page{padding:1rem .8rem;}
+  .card{padding:1rem;}
+  .dish-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+  .modal{padding:1.1rem;}
+  .pw-box{padding:1.4rem 1.2rem;margin:.8rem;}
+  .restaurant-item{flex-direction:column;align-items:flex-start;}
+  .restaurant-actions{width:100%;}
+  .restaurant-actions .btn{flex:1;}
+  .output-actions{flex-wrap:wrap;}
+  .features-grid{grid-template-columns:1fr 1fr;}
+  input,select,textarea{font-size:16px !important;}
+  .btn{min-height:44px;}
+  .btn-sm{min-height:36px;}
+  .nav-tab{min-height:44px;}
+  .modal-overlay{align-items:flex-end;padding:0;}
+  .modal{border-radius:18px 18px 0 0;max-height:92vh;width:100%;}
+  .pw-gate{align-items:flex-end;}
+  .pw-box{border-radius:18px 18px 0 0;width:100%;max-width:100%;}
+  .pm-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
+}
+</style>
+</head>
+<body>
+
+<!-- APP LOADER -->
+<div id="appLoader">
+  <div style="font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--accent);">MenuPost AI</div>
+  <div style="display:flex;gap:7px;"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  <div style="font-size:13px;color:var(--muted);" id="loaderMsg">Загрузка...</div>
+</div>
+
+<!-- PASSWORD GATE -->
+<div class="pw-gate" id="pwGate">
+  <div class="pw-box" id="pwBox">
+    <div style="font-size:2rem;margin-bottom:.5rem;">🔐</div>
+    <div class="pw-title">Вход в панель</div>
+    <div class="pw-sub">Введите пароль заведения</div>
+    <div class="pw-badge" id="pwBadge">—</div>
+    <div class="pw-inp"><input type="password" id="pwInput" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')submitPw()"/></div>
+    <div class="pw-err" id="pwErr"></div>
+    <button class="btn btn-accent btn-full" style="margin-top:10px;" onclick="submitPw()">Войти</button>
+    <button class="btn btn-outline btn-full" style="margin-top:7px;" onclick="cancelPw()">Отмена</button>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+      <button onclick="openResetPw()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;">
+        Забыли пароль? Сбросить через мастер-пароль
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MASTER GATE -->
+<div class="pw-gate" id="masterGate">
+  <div class="pw-box" id="masterBox">
+    <div style="font-size:2rem;margin-bottom:.5rem;">🛡️</div>
+    <div class="pw-title">Мастер-пароль</div>
+    <div class="pw-sub">Общий пароль платформы</div>
+    <div class="pw-inp"><input type="password" id="masterInput" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')submitMaster()"/></div>
+    <div class="pw-err" id="masterErr"></div>
+    <button class="btn btn-accent btn-full" style="margin-top:10px;" onclick="submitMaster()">Войти</button>
+    <button class="btn btn-outline btn-full" style="margin-top:7px;" onclick="cancelMaster()">Отмена</button>
+  </div>
+</div>
+
+<!-- RESET PASSWORD GATE -->
+<div class="pw-gate" id="resetGate">
+  <div class="pw-box" id="resetBox">
+    <div style="font-size:2rem;margin-bottom:.5rem;">🔑</div>
+    <div class="pw-title">Сброс пароля</div>
+    <div class="pw-sub">Введите мастер-пароль, затем новый пароль заведения</div>
+    <div class="pw-badge" id="resetBadge">—</div>
+    <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:4px;">
+      <input type="password" id="resetMasterInput" placeholder="Мастер-пароль" autocomplete="off" style="text-align:center;font-size:15px;letter-spacing:2px;"/>
+      <input type="password" id="resetNewPw" placeholder="Новый пароль заведения" autocomplete="off" style="text-align:center;font-size:15px;letter-spacing:2px;"/>
+      <input type="password" id="resetNewPw2" placeholder="Повторите новый пароль" autocomplete="off" style="text-align:center;font-size:15px;letter-spacing:2px;"/>
+    </div>
+    <div class="pw-err" id="resetErr"></div>
+    <button class="btn btn-accent btn-full" style="margin-top:10px;" onclick="submitResetPw()">Сбросить пароль</button>
+    <button class="btn btn-outline btn-full" style="margin-top:7px;" onclick="cancelResetPw()">Отмена</button>
+  </div>
+</div>
+
+<nav>
+  <div class="logo">Menu<span>Post</span> AI</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('landing')">Главная</button>
+    <button class="nav-tab" onclick="showPage('menu')">Меню</button>
+    <button class="nav-tab" onclick="showPage('admin')">Админ</button>
+  </div>
+  <div class="nav-right">
+  </div>
+</nav>
+
+<!-- LANDING -->
+<div class="page active" id="page-landing">
+  <div class="hero-section">
+    <div class="hero-badge">Платформа для ресторанов</div>
+    <h1 class="hero-h1">Всё для вашего<br/>ресторана — <em>в одном месте</em></h1>
+    <p class="hero-p">AI генерирует посты для Instagram и управляет онлайн-меню с QR-кодом. До 20 заведений.</p>
+    <button class="btn btn-accent" style="padding:12px 28px;font-size:14px;" onclick="showPage('admin')">Начать →</button>
+  </div>
+  <div style="max-width:800px;margin:0 auto;padding:0 1.5rem 1rem;">
+    <div class="features-grid">
+      <div class="feat-card"><div class="feat-title">Генератор постов</div><div class="feat-desc">AI пишет посты для Instagram на рус / узб / eng</div></div>
+      <div class="feat-card"><div class="feat-title">Онлайн меню + QR</div><div class="feat-desc">Гости сканируют QR и видят красивое меню с корзиной</div></div>
+      <div class="feat-card"><div class="feat-title">Заказы в Telegram 📲</div><div class="feat-desc">Заказы с корзиной приходят прямо в Telegram с кнопками</div></div>
+      <div class="feat-card"><div class="feat-title">Двойная защита 🔒</div><div class="feat-desc">Мастер-пароль + пароль каждого заведения отдельно</div></div>
+    </div>
+      <button class="btn btn-accent btn-full" onclick="showPage('admin')">Попробовать бесплатно</button>
+    </div>
+  </div>
+</div>
+
+<!-- MENU PAGE -->
+<div class="page" id="page-menu">
+  <div id="menuListView">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:9px;">
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.35rem;">Онлайн меню</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Управляй меню заведений</div>
+      </div>
+      <button class="btn btn-accent btn-sm" onclick="requireMaster(openAddRestaurant)">+ Новое заведение</button>
+    </div>
+    <div class="restaurant-list" id="menuRestList"></div>
+  </div>
+  <div class="menu-editor" id="menuEditor">
+    <button class="back-btn" onclick="backToList()">← Назад</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div id="editorLogoWrap" style="width:50px;height:50px;border-radius:12px;overflow:hidden;background:var(--bg3);border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--accent);"></div>
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.2rem;" id="editorName"></div>
+          <div style="font-size:12px;color:var(--muted);" id="editorMeta"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="openLogoUpload()">📷 Логотип</button>
+        <button class="btn btn-outline btn-sm" onclick="openTelegramSettings()">📱 Telegram</button>
+        <button class="btn btn-green btn-sm" onclick="openPublicMenu()">Предпросмотр</button>
+        <button class="btn btn-outline btn-sm" onclick="openQR()">QR-код</button>
+        <button class="btn btn-outline btn-sm" onclick="openChangePw()">Пароль</button>
+        <button class="btn btn-accent btn-sm" onclick="openAddDish()">+ Блюдо</button>
+      </div>
+    </div>
+    <div class="category-tabs" id="catTabs"></div>
+    <div class="dish-grid" id="dishGrid"></div>
+  </div>
+</div>
+
+<!-- ADMIN PAGE -->
+<div class="page" id="page-admin">
+  <div class="card">
+    <div class="card-title">Панель администратора</div>
+    <div class="card-sub" id="adminSubTitle">Мастер-пароль по умолчанию: <b style="color:var(--accent)">admin</b> — сразу смените!</div>
+    <div class="restaurant-list" id="adminRestList"></div>
+    <div style="margin-top:1rem;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-accent btn-sm" onclick="requireMaster(openAddRestaurant)">+ Добавить заведение</button>
+      <button class="btn btn-outline btn-sm" onclick="openChangeMasterPw()">Изменить мастер-пароль</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Статистика</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:11px;margin-top:9px;" id="statsGrid"></div>
+  </div>
+</div>
+
+<!-- ═══ PUBLIC MENU (full screen) ═══ -->
+<div class="public-menu" id="publicMenu">
+  <!-- Hero -->
+  <div class="pm-hero" id="pmHero">
+    <div class="pm-hero-bg"></div>
+    <div class="pm-hero-pattern"></div>
+    <div class="pm-hero-glow"></div>
+    <div class="pm-hero-content">
+      <div class="pm-logo-wrap">
+        <div id="pmLogoWrap"></div>
+        <div>
+          <div class="pm-rest-name" id="pmName">Меню</div>
+          <div class="pm-rest-meta" id="pmMeta"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Cats sticky -->
+  <div class="pm-cats" id="pmCats"></div>
+  <!-- Content -->
+  <div class="pm-content" id="pmContent"></div>
+  <!-- Cart FAB -->
+  <button class="pm-cart-fab" id="cartFab" onclick="openCart()">
+    <span>🛒 Корзина</span>
+    <span class="cart-count-badge" id="cartCountBadge">0</span>
+    <span id="cartFabPrice" style="font-size:12px;opacity:.8;"></span>
+  </button>
+</div>
+
+<!-- Dish Detail Overlay -->
+<div class="dish-overlay" id="dishOverlay">
+  <div class="dish-detail" id="dishDetailBox" style="position:relative;">
+    <button class="dd-close" onclick="closeDishOverlay()">✕</button>
+    <div class="dd-img" id="ddImg"></div>
+    <div class="dd-body">
+      <div class="dd-name" id="ddName"></div>
+      <div class="dd-price" id="ddPrice"></div>
+      <div class="dd-desc" id="ddDesc"></div>
+      <div class="dd-actions">
+        <div class="dd-qty-wrap">
+          <button class="dd-qty-btn" onclick="ddChangeQty(-1)">−</button>
+          <span class="dd-qty-num" id="ddQty">1</span>
+          <button class="dd-qty-btn" onclick="ddChangeQty(1)">+</button>
+        </div>
+        <button class="btn btn-accent" style="flex:1;" onclick="ddAddToCart()">Добавить в корзину</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CART MODAL -->
+<div class="cart-modal" id="cartModal">
+  <div class="cart-box">
+    <div class="cart-header">
+      <div class="cart-title">🛒 Корзина</div>
+      <button class="cart-close" onclick="closeCart()">✕</button>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-total">
+      <span class="cart-total-label">Итого</span>
+      <span class="cart-total-price" id="cartTotalPrice">0 сум</span>
+    </div>
+    <div class="cart-footer" id="cartFooter">
+      <button class="btn btn-accent btn-full" onclick="proceedToPhone()">Оформить заказ →</button>
+    </div>
+
+    <!-- Phone step -->
+    <div class="phone-step" id="phoneStep">
+      <div class="phone-step-title">Введите ваш номер</div>
+      <div class="phone-step-sub">Официант свяжется с вами для подтверждения заказа</div>
+      <div class="phone-input-wrap" style="margin-bottom:10px;">
+        <span class="phone-prefix">📞</span>
+        <input type="tel" id="phoneInput" placeholder="+998 90 000 00 00" style="font-size:15px;"/>
+      </div>
+      <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="phoneErr"></div>
+      <button class="btn btn-accent btn-full" id="sendOrderBtn" onclick="sendOrder()">Отправить заказ</button>
+      <button class="btn btn-outline btn-full" style="margin-top:7px;" onclick="backToCart()">← Назад</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Add Restaurant -->
+<div class="modal-overlay" id="addRestModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('addRestModal')">✕</button>
+    <div class="modal-title">Новое заведение</div>
+    <div style="background:rgba(232,160,69,.07);border:1px solid rgba(232,160,69,.2);border-radius:10px;padding:10px 13px;margin-bottom:13px;font-size:12px;color:var(--muted);">
+      Придумайте пароль — только владелец сможет управлять этим заведением
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>Название заведения</label><input id="rn-name" placeholder="Кафе «Навруз»"/></div>
+      <div class="fg"><label>Тип</label>
+        <select id="rn-type"><option>Ресторан</option><option>Кафе</option><option>Фастфуд</option><option>Кофейня</option><option>Пиццерия</option></select>
+      </div>
+      <div class="fg"><label>Адрес</label><input id="rn-addr" placeholder="г. Ургенч, ул. Ал-Хорезми 5"/></div>
+      <div class="fg"><label>Телефон</label><input id="rn-phone" placeholder="+998 99 123 45 67"/></div>
+      <div class="fg">
+        <label>Пароль заведения</label>
+        <input type="password" id="rn-pw" placeholder="Минимум 4 символа" autocomplete="new-password" oninput="pwStrength(this.value)"/>
+        <div class="pw-strength"><div class="pw-bar" id="rn-b1"></div><div class="pw-bar" id="rn-b2"></div><div class="pw-bar" id="rn-b3"></div><div class="pw-bar" id="rn-b4"></div></div>
+        <div id="rn-plbl" style="font-size:11px;color:var(--muted);margin-top:2px;"></div>
+      </div>
+      <div class="fg"><label>Повторите пароль</label><input type="password" id="rn-pw2" placeholder="••••••••" autocomplete="new-password"/></div>
+    </div>
+    <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="rn-err"></div>
+    <button class="btn btn-accent btn-full" onclick="addRestaurant()">Создать заведение</button>
+  </div>
+</div>
+
+<!-- Change Restaurant Password -->
+<div class="modal-overlay" id="changePwModal">
+  <div class="modal" style="max-width:380px;">
+    <button class="modal-close" onclick="closeModal('changePwModal')">✕</button>
+    <div class="modal-title">Изменить пароль заведения</div>
+    <div class="form-row">
+      <div class="fg"><label>Текущий пароль</label><input type="password" id="cp-old" placeholder="Текущий пароль"/></div>
+      <div class="fg"><label>Новый пароль</label><input type="password" id="cp-new" placeholder="Минимум 4 символа"/></div>
+      <div class="fg"><label>Повторите</label><input type="password" id="cp-new2" placeholder="Повторите"/></div>
+    </div>
+    <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="cp-err"></div>
+    <button class="btn btn-accent btn-full" onclick="changeRestPw()">Сохранить</button>
+  </div>
+</div>
+
+<!-- Change Master Password -->
+<div class="modal-overlay" id="changeMasterModal">
+  <div class="modal" style="max-width:380px;">
+    <button class="modal-close" onclick="closeModal('changeMasterModal')">✕</button>
+    <div class="modal-title">Изменить мастер-пароль</div>
+    <div class="form-row">
+      <div class="fg"><label>Текущий</label><input type="password" id="cm-old" placeholder="Текущий мастер-пароль"/></div>
+      <div class="fg"><label>Новый</label><input type="password" id="cm-new" placeholder="Минимум 4 символа"/></div>
+      <div class="fg"><label>Повторите</label><input type="password" id="cm-new2" placeholder="Повторите"/></div>
+    </div>
+    <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="cm-err"></div>
+    <button class="btn btn-accent btn-full" onclick="changeMasterPw()">Сохранить</button>
+  </div>
+</div>
+
+<!-- Telegram Settings -->
+<div class="modal-overlay" id="telegramModal">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('telegramModal')">✕</button>
+    <div class="modal-title">📱 Настройки Telegram</div>
+    <div style="background:rgba(76,175,125,.07);border:1px solid rgba(76,175,125,.2);border-radius:10px;padding:10px 13px;margin-bottom:13px;font-size:12px;color:var(--muted);line-height:1.6;">
+      Заказы будут приходить в ваш Telegram бот.<br/>
+      Укажите токен бота и ваш Chat ID для получения заказов.
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>Telegram Bot Token</label><input id="tg-token" placeholder="8599349209:AAF7w7Wo7frH..."/></div>
+      <div class="fg"><label>Chat ID (ваш Telegram ID)</label><input id="tg-chatid" placeholder="1182977792"/></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6;">
+      🤖 Как получить токен: создайте бота через @BotFather<br/>
+      🆔 Как узнать Chat ID: напишите @userinfobot
+    </div>
+    <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="tg-err"></div>
+    <button class="btn btn-accent btn-full" onclick="saveTelegramSettings()">Сохранить</button>
+  </div>
+</div>
+
+<!-- Logo Upload Modal -->
+<div class="modal-overlay" id="logoModal">
+  <div class="modal" style="max-width:380px;">
+    <button class="modal-close" onclick="closeModal('logoModal')">✕</button>
+    <div class="modal-title">📷 Логотип заведения</div>
+    <div class="fg" style="margin-bottom:13px;">
+      <label>Выберите фото логотипа</label>
+      <div class="logo-zone" id="logoZone" onclick="document.getElementById('logoInput').click()">
+        <input type="file" id="logoInput" accept="image/*" style="display:none" onchange="onLogoSelected(event)"/>
+        <img id="logoPreview" alt="" style="display:none;width:100%;height:100%;object-fit:cover;"/>
+        <div id="logoHint" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div style="font-size:2rem;">🏪</div>
+          <div style="font-size:12px;color:var(--muted);">Нажмите чтобы выбрать</div>
+        </div>
+      </div>
+    </div>
+    <div class="upload-wrap" id="logoUploadWrap">
+      <div class="upload-track"><div class="upload-fill" id="logoUploadFill"></div></div>
+      <div class="upload-label"><span id="logoUploadMsg">Загружаем...</span><span id="logoUploadPct">0%</span></div>
+    </div>
+    <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="logo-err"></div>
+    <button class="btn btn-accent btn-full" id="saveLogoBtn" onclick="saveLogo()" style="margin-top:8px;">Сохранить логотип</button>
+    <button class="btn btn-danger btn-full" style="margin-top:7px;" onclick="removeLogo()">Удалить логотип</button>
+  </div>
+</div>
+
+<!-- Add Dish -->
+<div class="modal-overlay" id="addDishModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('addDishModal')">✕</button>
+    <div class="modal-title">Добавить блюдо</div>
+    <div class="form-row">
+      <div class="fg"><label>Название</label><input id="dn-name" placeholder="Плов по-фергански"/></div>
+      <div class="fg"><label>Цена (только цифры для корзины)</label><input id="dn-price" placeholder="45000"/></div>
+      <div class="fg"><label>Единица цены</label><input id="dn-priceunit" placeholder="сум" value="сум"/></div>
+      <div class="fg">
+        <label>Категория</label>
+        <div id="catPickerWrap" style="position:relative;">
+          <div id="catPickerBtn" onclick="toggleCatPicker()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 11px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+            <span id="catPickerLabel">Основные блюда</span>
+            <span style="color:var(--muted);font-size:11px;">▼</span>
+          </div>
+          <input type="hidden" id="dn-cat" value="Основные блюда"/>
+          <div id="catPickerDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg3);border:1px solid var(--border);border-radius:10px;z-index:100;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.5);">
+          </div>
+        </div>
+        <div id="newCatWrap" style="display:none;margin-top:7px;">
+          <div style="display:flex;gap:7px;">
+            <input id="dn-newcat" placeholder="Янги категория номи..." style="flex:1;"/>
+            <button type="button" class="btn btn-accent btn-sm" onclick="addCustomCat()">Қўш</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Ёзиб "Қўш" тугмасини босинг</div>
+        </div>
+      </div>
+      <div class="fg"><label>Описание</label><textarea id="dn-desc" placeholder="Краткое описание блюда..."></textarea></div>
+      <div class="fg">
+        <label>Фото блюда 📷</label>
+        <div class="photo-zone" id="photoZone" onclick="document.getElementById('photoInput').click()">
+          <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="onPhotoSelected(event)"/>
+          <img id="photoPreview" alt=""/>
+          <div class="pz-hint" id="pzHint">
+            <div class="pz-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <rect x="1" y="5" width="18" height="13" rx="2.5" stroke="rgba(255,255,255,0.3)" stroke-width="1.4"/>
+                <circle cx="10" cy="11.5" r="3.5" stroke="rgba(232,160,69,0.8)" stroke-width="1.4"/>
+                <path d="M7 5l1.5-2.5h3L13 5" stroke="rgba(255,255,255,0.3)" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="pz-text">Нажмите чтобы выбрать фото из галереи</div>
+            <div class="pz-sub">JPG, PNG до 5MB — сохраняется автоматически</div>
+          </div>
+          <button class="pz-remove" id="pzRemove" onclick="removePhoto(event)">✕</button>
+        </div>
+        <div class="upload-wrap" id="uploadWrap">
+          <div class="upload-track"><div class="upload-fill" id="uploadFill"></div></div>
+          <div class="upload-label"><span id="uploadMsg">Загружаем в Firebase...</span><span id="uploadPct">0%</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:9px;">
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+          <span style="font-size:11px;color:var(--muted);">или вставьте ссылку</span>
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+        </div>
+        <input id="dn-imgurl" placeholder="https://... (ссылка на фото)" style="margin-top:8px;"/>
+      </div>
+      <div class="fg"><label>Статус</label>
+        <select id="dn-status"><option value="active">Доступно</option><option value="out">Нет в наличии</option></select>
+      </div>
+    </div>
+    <button class="btn btn-accent btn-full" id="addDishBtn" onclick="addDish()">Добавить блюдо</button>
+  </div>
+</div>
+
+<!-- Delete Category Confirm Modal -->
+<div class="modal-overlay" id="deleteCatModal">
+  <div class="modal" style="max-width:360px;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:.7rem;">🗑</div>
+    <div class="modal-title" style="text-align:center;" id="deleteCatTitle">Категорияни ўчириш</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:1.2rem;" id="deleteCatMsg"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-outline btn-full" onclick="closeModal('deleteCatModal')">Бекор қилиш</button>
+      <button class="btn btn-danger btn-full" id="deleteCatConfirmBtn" onclick="doDeleteCat()">Ўчириш</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR Modal -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal" style="text-align:center;max-width:380px;">
+    <button class="modal-close" onclick="closeModal('qrModal')">✕</button>
+    <div class="modal-title">QR-код меню</div>
+    <div class="qr-box">
+      <div id="qrcode" style="display:flex;justify-content:center;padding:1rem 0;"></div>
+      <div style="font-size:11px;color:var(--muted);word-break:break-all;" id="qrUrl"></div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin:1rem 0;">Распечатай и поставь на столики</p>
+    <button class="btn btn-accent btn-full" onclick="downloadQR()">Скачать QR-код</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ORDER STATUS NOTIFICATION -->
+<div class="order-notif loading" id="orderNotif">
+  <div class="notif-spinner" id="notifSpinner"></div>
+  <div class="notif-icon" id="notifIcon" style="display:none;">⏳</div>
+  <div class="notif-body">
+    <div class="notif-title" id="notifTitle">Заказ юборилди</div>
+    <div class="notif-sub" id="notifSub">Жавоб кутилmoqda...</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer style="background:var(--bg2);border-top:1px solid var(--border);padding:2rem 1.5rem;margin-top:2rem;">
+  <div style="max-width:960px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;align-items:center;">
+    <div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--accent);margin-bottom:.5rem;">Menu<span style="color:var(--text);">Post</span> AI</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.7;">Платформа для ресторанов и кафе.<br/>AI посты, онлайн-меню, QR-коды.</div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.8rem;">Разработчик</div>
+      <a href="tel:+998904431014" style="display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;font-size:13px;margin-bottom:.7rem;">
+        <div style="width:32px;height:32px;background:rgba(232,160,69,.1);border:1px solid rgba(232,160,69,.25);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">📞</div>
+        +998 90 443 10 14
+      </a>
+      <a href="https://instagram.com/__malik__009__" target="_blank" style="display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;font-size:13px;">
+        <div style="width:32px;height:32px;background:rgba(232,160,69,.1);border:1px solid rgba(232,160,69,.25);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">📷</div>
+        @__malik__009__
+      </a>
+    </div>
+  </div>
+  <div style="max-width:960px;margin:1.5rem auto 0;padding-top:1rem;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--muted);">
+    © 2025 MenuPost AI · Разработано для рестораторов Узбекистана
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════
+//  FIREBASE INIT
+// ═══════════════════════════════════════════
+const fbConfig = {
+  apiKey: "AIzaSyCC8KbaB7Zdu2kAkOCiF-UKa8GgfhsrxU8",
+  authDomain: "menyu-cc1ad.firebaseapp.com",
+  projectId: "menyu-cc1ad",
+  storageBucket: "menyu-cc1ad.firebasestorage.app",
+  messagingSenderId: "123543943109",
+  appId: "1:123543943109:web:2305411248d96173f8fdac"
+};
+firebase.initializeApp(fbConfig);
+const db = firebase.firestore();
+
+// ═══════════════════════════════════════════
+//  HASH
+// ═══════════════════════════════════════════
+function sh(s){
+  let h=0;
+  for(let i=0;i<s.length;i++) h=Math.imul(31,h)+s.charCodeAt(i)|0;
+  return String(h>>>0);
+}
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+const S={
+  restaurants:[],
+  masterHash:'',
+  masterUnlocked:false,
+  currentRestId:null,
+  unlockedRests:new Set(),
+  postLang:'ru',
+  selectedPhoto:null,
+  photoPreviewUrl:null,
+  selectedLogo:null,
+  // Cart
+  cart:{},            // {dishId: {dish, qty}}
+  currentPublicRestId:null,
+  isPublicView:false, // true = opened via QR
+};
+
+// ═══════════════════════════════════════════
+//  CART HELPERS
+// ═══════════════════════════════════════════
+function cartAdd(dish, qty=1){
+  if(!S.cart[dish.id]) S.cart[dish.id]={dish, qty:0};
+  S.cart[dish.id].qty+=qty;
+  if(S.cart[dish.id].qty<=0) delete S.cart[dish.id];
+  updateCartUI();
+}
+function cartSet(dishId, qty){
+  if(qty<=0){ delete S.cart[dishId]; }
+  else { if(S.cart[dishId]) S.cart[dishId].qty=qty; }
+  updateCartUI();
+}
+function cartTotal(){
+  let total=0;
+  for(const k in S.cart){
+    const p=parsePrice(S.cart[k].dish.price);
+    total+=p*S.cart[k].qty;
+  }
+  return total;
+}
+function cartCount(){
+  let n=0;
+  for(const k in S.cart) n+=S.cart[k].qty;
+  return n;
+}
+function parsePrice(priceStr){
+  if(!priceStr) return 0;
+  return parseInt(priceStr.toString().replace(/\D/g,''))||0;
+}
+function formatPrice(num, unit='сум'){
+  if(!num) return '';
+  return num.toLocaleString('ru-RU')+' '+unit;
+}
+function updateCartUI(){
+  const cnt=cartCount();
+  const total=cartTotal();
+  const fab=document.getElementById('cartFab');
+  const badge=document.getElementById('cartCountBadge');
+  const fabPrice=document.getElementById('cartFabPrice');
+  if(cnt>0){
+    fab.classList.add('show');
+    badge.textContent=cnt;
+    fabPrice.textContent=total?formatPrice(total):'';
+  } else {
+    fab.classList.remove('show');
+  }
+  // Update dish cards qty indicators
+  for(const k in S.cart){
+    const qtyEl=document.getElementById('dqty_'+k);
+    const qtyNum=document.getElementById('dqn_'+k);
+    if(qtyEl){qtyEl.style.display='flex';if(qtyNum)qtyNum.textContent=S.cart[k].qty;}
+    const addBtn=document.getElementById('dadd_'+k);
+    if(addBtn) addBtn.style.display='none';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  FIRESTORE HELPERS
+// ═══════════════════════════════════════════
+async function fsSaveMaster(hash){
+  await db.collection('config').doc('master').set({masterHash:hash});
+}
+async function fsSaveRestaurant(r){
+  const clean={
+    id:r.id, name:r.name, type:r.type||'',
+    addr:r.addr||'', phone:r.phone||'',
+    pwHash:r.pwHash,
+    logo:r.logo||'',
+    tgToken:r.tgToken||'',
+    tgChatId:r.tgChatId||'',
+    frozen:r.frozen||false,
+    deletedCats:r.deletedCats||[],
+    dishes:(r.dishes||[]).map(d=>({
+      id:d.id, name:d.name, price:d.price||'',
+      priceUnit:d.priceUnit||'сум',
+      cat:d.cat||'', desc:d.desc||'',
+      img:d.img||'', status:d.status||'active'
+    }))
+  };
+  await db.collection('restaurants').doc(r.id).set(clean);
+}
+async function fsDeleteRestaurant(id){
+  await db.collection('restaurants').doc(id).delete();
+}
+
+// ═══════════════════════════════════════════
+//  PHOTO COMPRESS + FIRESTORE STORAGE
+// ═══════════════════════════════════════════
+function compressImage(file, maxPx=500){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('Ошибка чтения файла'));
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error('Ошибка изображения'));
+      img.onload=()=>{
+        const MAX=maxPx;
+        let w=img.width, h=img.height;
+        if(w>h){ h=Math.round(h*MAX/w); w=MAX; }
+        else    { w=Math.round(w*MAX/h); h=MAX; }
+        if(w<1)w=1; if(h<1)h=1;
+        const cv=document.createElement('canvas');
+        cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        cv.toBlob(blob=>{
+          if(blob) resolve(blob);
+          else reject(new Error('Ошибка сжатия'));
+        },'image/jpeg',0.65);
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function savePhotoToFirestore(file, onProgress, maxPx=500){
+  if(onProgress) onProgress(10,'Сжимаем фото...');
+  const blob = await compressImage(file, maxPx);
+  if(onProgress) onProgress(40,'Конвертируем...');
+  const base64 = await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onerror=rej;
+    r.onload=e=>res(e.target.result);
+    r.readAsDataURL(blob);
+  });
+  const sizeKB = Math.round(base64.length * 0.75 / 1024);
+  if(sizeKB > 850) throw new Error(`Фото слишком большое (${sizeKB}KB). Выберите другое.`);
+  if(onProgress) onProgress(70,'Сохраняем в базу...');
+  const photoId = 'ph_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  await db.collection('photos').doc(photoId).set({data:base64, createdAt:Date.now(), sizeKB});
+  if(onProgress) onProgress(100,'✅ Готово!');
+  return 'firestore:' + photoId;
+}
+
+const photoCache = {};
+async function loadPhotoFromFirestore(photoId){
+  if(photoCache[photoId]) return photoCache[photoId];
+  const doc = await db.collection('photos').doc(photoId).get();
+  if(!doc.exists) return '';
+  const dataUrl = doc.data().data;
+  photoCache[photoId] = dataUrl;
+  return dataUrl;
+}
+async function resolveImgSrc(img){
+  if(!img) return '';
+  if(img.startsWith('firestore:')){
+    const photoId = img.replace('firestore:','');
+    return await loadPhotoFromFirestore(photoId);
+  }
+  return img;
+}
+
+// ═══════════════════════════════════════════
+//  LOAD DATA
+// ═══════════════════════════════════════════
+function loadData(){
+  setLoader(true,'Подключаемся к базе данных...');
+  db.collection('config').doc('master').get().then(doc=>{
+    S.masterHash = doc.exists ? doc.data().masterHash : sh('admin');
+    if(!doc.exists) fsSaveMaster(S.masterHash);
+  }).catch(e=>console.warn('Master load:', e));
+
+  let firstLoad=true;
+  db.collection('restaurants').orderBy('name').onSnapshot(snap=>{
+    S.restaurants = snap.docs.map(d=>({...d.data(),id:d.id}));
+
+    if(firstLoad){
+      firstLoad=false;
+      if(S.restaurants.length===0){ seedDemo(); return; }
+      setLoader(false);
+      // QR орқали кириш
+      const urlId=new URLSearchParams(location.search).get('menu');
+      if(urlId){
+        const r=S.restaurants.find(x=>x.id===urlId);
+        if(r){
+          S.currentRestId=urlId;
+          S.currentPublicRestId=urlId;
+          S.isPublicView=true;
+          showPublicMenuFor(r);
+          return;
+        }
+      }
+    } else {
+      // Реал вақтда ўзгариш — loader йўқ
+      if(S.restaurants.length===0) return;
+    }
+
+    setLoader(false);
+    refreshUI();
+  }, err=>{
+    console.error('Firestore:', err);
+    setLoader(false);
+    toast('Ошибка подключения к базе данных');
+  });
+}
+
+function setLoader(show,msg){
+  const el=document.getElementById('appLoader');
+  if(msg) document.getElementById('loaderMsg').textContent=msg;
+  if(show){ el.classList.remove('hide'); el.style.display='flex'; }
+  else    { el.classList.add('hide'); setTimeout(()=>el.style.display='none',400); }
+}
+
+function refreshUI(){
+  const active=document.querySelector('.page.active');
+
+  // ── Меню саҳифаси ──
+  if(active && active.id==='page-menu'){
+    const editorActive=document.getElementById('menuEditor').classList.contains('active');
+    if(editorActive && S.currentRestId){
+      const r=S.restaurants.find(x=>x.id===S.currentRestId);
+      if(r){
+        document.getElementById('editorName').textContent=r.name;
+        document.getElementById('editorMeta').textContent=(r.type||'')+' · '+(r.addr||'');
+        renderEditor(r);
+      }
+    } else {
+      renderMenuList();
+    }
+  }
+
+  // ── Админ саҳифаси ──
+  if(active && active.id==='page-admin') renderAdmin();
+
+  // ── Публик меню (QR орқали) реал вақтда янгилансин ──
+  const pm=document.getElementById('publicMenu');
+  if(pm.classList.contains('show') && S.currentPublicRestId){
+    const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);
+    if(r){
+      // Агар frozen статуси ўзгарса — дарров янгилансин
+      const activeCat=document.querySelector('.pm-cat.active');
+      const cat=activeCat&&activeCat.textContent!=='Все'?activeCat.textContent:null;
+      showPublicMenuFor(r);
+    }
+  }
+}
+
+async function seedDemo(){
+  setLoader(true,'Создаём демо данные...');
+  const demo=[
+    {id:'demo1',name:'Кафе «Наврӯз»',type:'Кафе',addr:'г. Ургенч, ул. Ал-Хорезми 5',phone:'+998 91 234 56 78',pwHash:sh('1234'),logo:'',tgToken:'',tgChatId:'',dishes:[
+      {id:'dd1',name:'Плов по-фергански',price:'45000',priceUnit:'сум',cat:'Основные блюда',desc:'Ароматный плов с говядиной',img:'',status:'active'},
+      {id:'dd2',name:'Шашлык',price:'60000',priceUnit:'сум',cat:'Гриль',desc:'Сочный шашлык на углях',img:'',status:'active'},
+      {id:'dd3',name:'Лагман',price:'35000',priceUnit:'сум',cat:'Супы',desc:'Густой суп с лапшой',img:'',status:'active'},
+    ]},
+    {id:'demo2',name:'Ресторан «Шарк»',type:'Ресторан',addr:'пр. Ислама Каримова 12',phone:'+998 93 456 78 90',pwHash:sh('5678'),logo:'',tgToken:'',tgChatId:'',dishes:[
+      {id:'dd4',name:'Шурпа',price:'40000',priceUnit:'сум',cat:'Супы',desc:'Наваристый суп из баранины',img:'',status:'active'},
+      {id:'dd5',name:'Манты',price:'30000',priceUnit:'сум',cat:'Основные блюда',desc:'Сочные манты на пару',img:'',status:'active'},
+    ]}
+  ];
+  for(const r of demo) await fsSaveRestaurant(r);
+}
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+function showPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  const idx={landing:0,menu:1,admin:2};
+  if(idx[n]!==undefined) document.querySelectorAll('.nav-tab')[idx[n]].classList.add('active');
+  if(n==='menu') renderMenuList();
+  if(n==='admin') renderAdmin();
+}
+
+// ═══════════════════════════════════════════
+//  POST GENERATOR
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+//  MASTER PASSWORD
+// ═══════════════════════════════════════════
+let _masterCb=null;
+function requireMaster(cb){
+  if(S.masterUnlocked){cb();return;}
+  _masterCb=cb;
+  document.getElementById('masterInput').value='';
+  document.getElementById('masterErr').textContent='';
+  document.getElementById('masterGate').classList.add('show');
+  setTimeout(()=>document.getElementById('masterInput').focus(),80);
+}
+function submitMaster(){
+  const v=document.getElementById('masterInput').value;
+  if(!v){document.getElementById('masterErr').textContent='Введите пароль';return;}
+  if(sh(v)===S.masterHash){
+    S.masterUnlocked=true;
+    document.getElementById('masterGate').classList.remove('show');
+    if(_masterCb){_masterCb();_masterCb=null;}
+  }else{
+    document.getElementById('masterErr').textContent='Неверный пароль';
+    document.getElementById('masterInput').value='';
+    shakeEl('masterBox');
+  }
+}
+function cancelMaster(){document.getElementById('masterGate').classList.remove('show');_masterCb=null;}
+function openChangeMasterPw(){
+  requireMaster(()=>{
+    ['cm-old','cm-new','cm-new2'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('cm-err').textContent='';
+    document.getElementById('changeMasterModal').classList.add('show');
+  });
+}
+async function changeMasterPw(){
+  const old=document.getElementById('cm-old').value;
+  const nw=document.getElementById('cm-new').value;
+  const nw2=document.getElementById('cm-new2').value;
+  const err=document.getElementById('cm-err');
+  if(sh(old)!==S.masterHash){err.textContent='Неверный текущий пароль';return;}
+  if(nw.length<4){err.textContent='Минимум 4 символа';return;}
+  if(nw!==nw2){err.textContent='Пароли не совпадают';return;}
+  S.masterHash=sh(nw);
+  await fsSaveMaster(S.masterHash);
+  closeModal('changeMasterModal');
+  toast('✅ Мастер-пароль изменён');
+}
+
+// ═══════════════════════════════════════════
+//  RESTAURANT PASSWORD
+// ═══════════════════════════════════════════
+let _pwCb=null;
+function requireRestPw(id,cb){
+  if(S.unlockedRests.has(id)){cb();return;}
+  const r=S.restaurants.find(x=>x.id===id);
+  if(!r) return;
+  S.currentRestId=id;
+  document.getElementById('pwBadge').textContent=r.name;
+  document.getElementById('pwInput').value='';
+  document.getElementById('pwErr').textContent='';
+  _pwCb=cb;
+  document.getElementById('pwGate').classList.add('show');
+  setTimeout(()=>document.getElementById('pwInput').focus(),80);
+}
+function submitPw(){
+  const v=document.getElementById('pwInput').value;
+  const r=S.restaurants.find(x=>x.id===S.currentRestId);
+  if(!r||!v){document.getElementById('pwErr').textContent='Введите пароль';return;}
+  if(sh(v)===r.pwHash){
+    S.unlockedRests.add(S.currentRestId);
+    document.getElementById('pwGate').classList.remove('show');
+    if(_pwCb){_pwCb();_pwCb=null;}
+  }else{
+    document.getElementById('pwErr').textContent='Неверный пароль';
+    document.getElementById('pwInput').value='';
+    shakeEl('pwBox');
+  }
+}
+function cancelPw(){document.getElementById('pwGate').classList.remove('show');_pwCb=null;}
+
+function openResetPw(){
+  document.getElementById('pwGate').classList.remove('show');
+  const r=S.restaurants.find(x=>x.id===S.currentRestId);
+  document.getElementById('resetBadge').textContent = r ? r.name : '—';
+  document.getElementById('resetMasterInput').value='';
+  document.getElementById('resetNewPw').value='';
+  document.getElementById('resetNewPw2').value='';
+  document.getElementById('resetErr').textContent='';
+  document.getElementById('resetGate').classList.add('show');
+  setTimeout(()=>document.getElementById('resetMasterInput').focus(),80);
+}
+async function submitResetPw(){
+  const master = document.getElementById('resetMasterInput').value;
+  const nw     = document.getElementById('resetNewPw').value;
+  const nw2    = document.getElementById('resetNewPw2').value;
+  const err    = document.getElementById('resetErr');
+  if(sh(master) !== S.masterHash){ err.textContent='❌ Неверный мастер-пароль'; shakeEl('resetBox'); return; }
+  if(nw.length < 4){ err.textContent='Минимум 4 символа'; return; }
+  if(nw !== nw2){ err.textContent='Пароли не совпадают'; return; }
+  const r = S.restaurants.find(x=>x.id===S.currentRestId);
+  if(!r){ err.textContent='Заведение не найдено'; return; }
+  r.pwHash = sh(nw);
+  try{
+    await fsSaveRestaurant(r);
+    S.unlockedRests.add(S.currentRestId);
+    document.getElementById('resetGate').classList.remove('show');
+    toast('✅ Пароль изменён!');
+    await tgSend(
+      `🔑 <b>Парол тикланди!</b>\n\n🏪 Заведение: <b>${r.name}</b>\n🔐 Янги парол: <b>${nw}</b>\n\n🕐 ${new Date().toLocaleString('ru-RU')}`
+    );
+    if(_pwCb){ _pwCb(); _pwCb=null; }
+  }catch(e){
+    err.textContent='Ошибка сохранения: '+e.message;
+  }
+}
+function cancelResetPw(){
+  document.getElementById('resetGate').classList.remove('show');
+  document.getElementById('pwGate').classList.add('show');
+}
+function openChangePw(){
+  ['cp-old','cp-new','cp-new2'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cp-err').textContent='';
+  document.getElementById('changePwModal').classList.add('show');
+}
+async function changeRestPw(){
+  const r=S.restaurants.find(x=>x.id===S.currentRestId);
+  const old=document.getElementById('cp-old').value;
+  const nw=document.getElementById('cp-new').value;
+  const nw2=document.getElementById('cp-new2').value;
+  const err=document.getElementById('cp-err');
+  if(sh(old)!==r.pwHash){err.textContent='Неверный текущий пароль';return;}
+  if(nw.length<4){err.textContent='Минимум 4 символа';return;}
+  if(nw!==nw2){err.textContent='Пароли не совпадают';return;}
+  r.pwHash=sh(nw);
+  await fsSaveRestaurant(r);
+  closeModal('changePwModal');
+  toast('✅ Пароль заведения изменён');
+  await tgSend(
+    `🔐 <b>Парол ўзгартирилди!</b>\n\n🏪 Заведение: <b>${r.name}</b>\n🔑 Янги парол: <b>${nw}</b>\n\n🕐 ${new Date().toLocaleString('ru-RU')}`
+  );
+}
+
+// ═══════════════════════════════════════════
+//  TELEGRAM SETTINGS
+// ═══════════════════════════════════════════
+function openTelegramSettings(){
+  const r=S.restaurants.find(x=>x.id===S.currentRestId); if(!r) return;
+  document.getElementById('tg-token').value=r.tgToken||'';
+  document.getElementById('tg-chatid').value=r.tgChatId||'';
+  document.getElementById('tg-err').textContent='';
+  document.getElementById('telegramModal').classList.add('show');
+}
+async function saveTelegramSettings(){
+  const r=S.restaurants.find(x=>x.id===S.currentRestId); if(!r) return;
+  const token=document.getElementById('tg-token').value.trim();
+  const chatId=document.getElementById('tg-chatid').value.trim();
+  r.tgToken=token;
+  r.tgChatId=chatId;
+  try{
+    await fsSaveRestaurant(r);
+    closeModal('telegramModal');
+    toast('✅ Telegram настроен!');
+  }catch(e){
+    document.getElementById('tg-err').textContent='Ошибка: '+e.message;
+  }
+}
+
+// ═══════════════════════════════════════════
+//  LOGO UPLOAD
+// ═══════════════════════════════════════════
+function openLogoUpload(){
+  S.selectedLogo=null;
+  document.getElementById('logoInput').value='';
+  document.getElementById('logoPreview').style.display='none';
+  document.getElementById('logoHint').style.display='flex';
+  document.getElementById('logoUploadWrap').classList.remove('show');
+  document.getElementById('logo-err').textContent='';
+  document.getElementById('logoModal').classList.add('show');
+}
+function onLogoSelected(e){
+  const file=e.target.files[0]; if(!file) return;
+  if(file.size>5*1024*1024){toast('Слишком большой файл. Макс. 5MB.');return;}
+  S.selectedLogo=file;
+  const url=URL.createObjectURL(file);
+  const img=document.getElementById('logoPreview');
+  img.src=url; img.style.display='block';
+  document.getElementById('logoHint').style.display='none';
+}
+async function saveLogo(){
+  if(!S.selectedLogo){toast('Выберите фото');return;}
+  const r=S.restaurants.find(x=>x.id===S.currentRestId); if(!r) return;
+  const wrap=document.getElementById('logoUploadWrap');
+  const fill=document.getElementById('logoUploadFill');
+  const msg=document.getElementById('logoUploadMsg');
+  const pct=document.getElementById('logoUploadPct');
+  wrap.classList.add('show');
+  const btn=document.getElementById('saveLogoBtn');
+  btn.disabled=true;
+  try{
+    const url=await savePhotoToFirestore(S.selectedLogo,(p,m)=>{
+      fill.style.width=p+'%'; pct.textContent=p+'%'; if(m) msg.textContent=m;
+    }, 300); // 300px for logo
+    r.logo=url;
+    await fsSaveRestaurant(r);
+    closeModal('logoModal');
+    renderEditorLogo(r);
+    toast('✅ Логотип сохранён!');
+  }catch(e){
+    document.getElementById('logo-err').textContent='Ошибка: '+e.message;
+  }
+  wrap.classList.remove('show');
+  btn.disabled=false;
+}
+async function removeLogo(){
+  const r=S.restaurants.find(x=>x.id===S.currentRestId); if(!r) return;
+  r.logo='';
+  await fsSaveRestaurant(r);
+  closeModal('logoModal');
+  renderEditorLogo(r);
+  toast('Логотип удалён');
+}
+async function renderEditorLogo(r){
+  const wrap=document.getElementById('editorLogoWrap');
+  if(!r||!wrap) return;
+  if(r.logo){
+    const src=await resolveImgSrc(r.logo);
+    if(src) wrap.innerHTML=`<img src="${src}" style="width:100%;height:100%;object-fit:cover;" />`;
+    else wrap.textContent=r.name.charAt(0).toUpperCase();
+  } else {
+    wrap.textContent=r.name.charAt(0).toUpperCase();
+  }
+}
+
+// ═══════════════════════════════════════════
+//  MENU LIST
+// ═══════════════════════════════════════════
+function renderMenuList(){
+  const el=document.getElementById('menuRestList'); el.innerHTML='';
+  if(!S.restaurants.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">Нет заведений. Нажмите "+ Новое заведение"</div>';
+    return;
+  }
+  S.restaurants.forEach(r=>{
+    const locked=!S.unlockedRests.has(r.id);
+    const frozen=r.frozen||false;
+    const d=document.createElement('div'); d.className='restaurant-item';
+    d.innerHTML=`
+      <div>
+        <div class="restaurant-name">${r.name} <span style="font-size:10px;opacity:.4;">${locked?'🔒':'🔓'}</span>${frozen?'<span style="font-size:10px;color:#64a0ff;margin-left:4px;">❄️</span>':''}</div>
+        <div class="restaurant-meta">${r.type||''} · ${r.addr||''} · ${(r.dishes||[]).length} блюд</div>
+      </div>
+      <div class="restaurant-actions">
+        <span class="badge ${frozen?'badge-frozen':'badge-green'}">${frozen?'❄️ Заморожено':'Активно'}</span>
+        <button class="btn btn-outline btn-sm" onclick="tryOpenEditor('${r.id}')">Управлять меню</button>
+        <button class="btn btn-outline btn-sm" onclick="openQRFor('${r.id}')">QR-код</button>
+      </div>`;
+    el.appendChild(d);
+  });
+}
+
+function tryOpenEditor(id){requireRestPw(id,()=>openEditor(id));}
+function openEditor(id){
+  S.currentRestId=id;
+  const r=S.restaurants.find(x=>x.id===id); if(!r) return;
+  document.getElementById('menuListView').style.display='none';
+  document.getElementById('menuEditor').classList.add('active');
+  document.getElementById('editorName').textContent=r.name;
+  document.getElementById('editorMeta').textContent=(r.type||'')+' · '+(r.addr||'');
+  renderEditorLogo(r);
+  renderEditor(r);
+}
+function backToList(){
+  document.getElementById('menuListView').style.display='block';
+  document.getElementById('menuEditor').classList.remove('active');
+  renderMenuList();
+}
+function renderEditor(r){
+  if(!r) r=S.restaurants.find(x=>x.id===S.currentRestId); if(!r) return;
+  const dishes=r.dishes||[];
+  const cats=[...new Set(dishes.map(d=>d.cat))];
+  const tabs=document.getElementById('catTabs');
+  tabs.innerHTML=`<button class="cat-tab active" onclick="filterDishes('all',this)">Все (${dishes.length})</button>`;
+  cats.forEach(c=>{
+    const cnt=dishes.filter(d=>d.cat===c).length;
+    const b=document.createElement('button'); b.className='cat-tab';
+    b.textContent=`${c} (${cnt})`; b.onclick=()=>filterDishes(c,b); tabs.appendChild(b);
+  });
+  renderDishes(dishes);
+}
+function filterDishes(cat,btn){
+  document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active');
+  const r=S.restaurants.find(x=>x.id===S.currentRestId);
+  renderDishes(cat==='all'?r.dishes:r.dishes.filter(d=>d.cat===cat));
+}
+function renderDishes(dishes){
+  const g=document.getElementById('dishGrid'); g.innerHTML='';
+  if(!dishes.length){g.innerHTML='<div style="color:var(--muted);font-size:13px;padding:1rem;">Нет блюд в этой категории</div>';return;}
+  dishes.forEach(d=>{
+    const c=document.createElement('div'); c.className='dish-card-admin';
+    const imgId='dimg_'+d.id;
+    c.innerHTML=`
+      <div class="dish-img-admin" id="${imgId}">${dishPh()}</div>
+      <div class="dish-info-admin">
+        <div class="dish-name-admin">${d.name}</div>
+        <div class="dish-price-admin">${d.price?d.price+' '+(d.priceUnit||'сум'):''}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px;">${d.cat||''}${d.status==='out'?' · <span style="color:var(--red)">Нет в наличии</span>':''}</div>
+      </div>
+      <div class="dish-actions-admin">
+        <button class="btn btn-danger btn-sm" style="flex:1;" onclick="deleteDish('${d.id}')">Удалить</button>
+        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="toggleDish('${d.id}')">${d.status==='active'?'Скрыть':'Показать'}</button>
+      </div>`;
+    g.appendChild(c);
+    if(d.img){
+      resolveImgSrc(d.img).then(src=>{
+        const el=document.getElementById(imgId);
+        if(el && src) el.innerHTML=`<img src="${src}" alt="${d.name}" loading="lazy" onerror="this.parentElement.innerHTML=dishPh()">`;
+      });
+    }
+  });
+}
+function dishPh(){return`<div class="dish-img-placeholder"><svg width="44" height="44" viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="16" stroke="rgba(232,160,69,0.2)" stroke-width="1"/><circle cx="22" cy="22" r="10" stroke="rgba(232,160,69,0.1)" stroke-width="1"/><circle cx="22" cy="22" r="3" fill="rgba(232,160,69,0.15)"/></svg></div>`;}
+
+// ═══════════════════════════════════════════
+//  DISH PHOTO (from gallery)
+// ═══════════════════════════════════════════
+function onPhotoSelected(e){
+  const file=e.target.files[0]; if(!file) return;
+  if(file.size>5*1024*1024){toast('Файл слишком большой. Максимум 5MB.');return;}
+  if(S.photoPreviewUrl) URL.revokeObjectURL(S.photoPreviewUrl);
+  S.selectedPhoto=file;
+  S.photoPreviewUrl=URL.createObjectURL(file);
+  const img=document.getElementById('photoPreview');
+  img.src=S.photoPreviewUrl; img.style.display='block';
+  document.getElementById('pzHint').style.display='none';
+  document.getElementById('pzRemove').style.display='flex';
+  document.getElementById('dn-imgurl').value='';
+}
+function removePhoto(e){
+  e.stopPropagation();
+  S.selectedPhoto=null;
+  if(S.photoPreviewUrl){URL.revokeObjectURL(S.photoPreviewUrl);S.photoPreviewUrl=null;}
+  document.getElementById('photoPreview').src='';
+  document.getElementById('photoPreview').style.display='none';
+  document.getElementById('pzHint').style.display='flex';
+  document.getElementById('pzRemove').style.display='none';
+  document.getElementById('photoInput').value='';
+}
+function resetPhotoZone(){removePhoto({stopPropagation:()=>{}});}
+
+function setProgress(pct,msg){
+  document.getElementById('uploadFill').style.width=pct+'%';
+  document.getElementById('uploadPct').textContent=pct+'%';
+  if(msg) document.getElementById('uploadMsg').textContent=msg;
+}
+
+// ═══════════════════════════════════════════
+//  ADD DISH
+// ═══════════════════════════════════════════
+function onCatChange(sel){}
+
+function getCatValue(){
+  return document.getElementById('dn-cat').value||'Основные блюда';
+}
+
+// ── CUSTOM CATEGORY PICKER ──
+const DEFAULT_CATS=['Основные блюда','Салаты','Супы','Гриль','Пицца','Десерты','Напитки','Завтраки'];
+
+function getCustomCats(){
+  const r=S.restaurants.find(x=>x.id===S.currentRestId);
+  const existing=r?[...new Set((r.dishes||[]).map(d=>d.cat).filter(Boolean))]:[];
+  return existing.filter(c=>!DEFAULT_CATS.includes(c));
+}
+function getAllCats(){
+  const r=S.restaurants.find(x=>x.id===S.currentRestId);
+  const deleted=r&&r.deletedCats?r.deletedCats:[];
+  const customCats=getCustomCats();
+  // Стандарт kategoriyalardan o'chirilmaganlarini ol
+  const activeCats=DEFAULT_CATS.filter(c=>!deleted.includes(c));
+  return [...new Set([...activeCats,...customCats])];
+}
+function selectCat(cat){
+  document.getElementById('dn-cat').value=cat;
+  document.getElementById('catPickerLabel').textContent=cat;
+  document.getElementById('catPickerDropdown').style.display='none';
+  document.getElementById('newCatWrap').style.display='none';
+}
+function toggleCatPicker(){
+  const dd=document.getElementById('catPickerDropdown');
+  if(dd.style.display==='none'||!dd.style.display){
+    renderCatDropdown();
+    dd.style.display='block';
+    setTimeout(()=>{
+      document.addEventListener('click',closeCatPickerOutside,{once:true});
+    },10);
+  } else {
+    dd.style.display='none';
+  }
+}
+function closeCatPickerOutside(e){
+  const wrap=document.getElementById('catPickerWrap');
+  if(wrap&&!wrap.contains(e.target)){
+    document.getElementById('catPickerDropdown').style.display='none';
+  }
+}
+function renderCatDropdown(){
+  const dd=document.getElementById('catPickerDropdown');
+  const allCats=getAllCats();
+  const customCats=getCustomCats();
+  dd.innerHTML='';
+  allCats.forEach(cat=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:9px 12px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.04);';
+    row.onmouseenter=()=>row.style.background='rgba(255,255,255,.06)';
+    row.onmouseleave=()=>row.style.background='';
+    const nameSpan=document.createElement('span');
+    nameSpan.style.cssText='font-size:13px;flex:1;';
+    nameSpan.textContent=cat;
+    nameSpan.onclick=()=>selectCat(cat);
+    row.appendChild(nameSpan);
+    const delBtn=document.createElement('button');
+    delBtn.style.cssText='background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0 4px;line-height:1;opacity:.5;transition:opacity .2s;';
+    delBtn.textContent='🗑';
+    delBtn.title='Ўчириш';
+    delBtn.onmouseenter=()=>{delBtn.style.opacity='1';delBtn.style.color='var(--red)';};
+    delBtn.onmouseleave=()=>{delBtn.style.opacity='.5';delBtn.style.color='var(--muted)';};
+    delBtn.onclick=(e)=>{e.stopPropagation();confirmDeleteCat(cat);};
+    row.appendChild(delBtn);
+    dd.appendChild(row);
+  });
+  const addRow=document.createElement('div');
+  addRow.style.cssText='padding:9px 12px;cursor:pointer;color:var(--accent);font-size:13px;display:flex;align-items:center;gap:7px;border-top:1px solid var(--border);';
+  addRow.innerHTML='<span style="font-size:16px;">➕</span> Янги категория қўшиш...';
+  addRow.onclick=()=>{
+    document.getElementById('catPickerDropdown').style.display='none';
+    document.getElementById('newCatWrap').style.display='block';
+    setTimeout(()=>document.getElementById('dn-newcat').focus(),50);
+  };
+  dd.appendChild(addRow);
+}
+function addCustomCat(){
+  const val=document.getElementById('dn-newcat').value.trim();
+  if(!val){toast('Категория номини ёзинг');return;}
+  selectCat(val);
+  document.getElementById('dn-newcat').value='';
+  document.getElementById('newCatWrap').style.display='none';
+  toast('✅ Категория танланди: '+val);
+}
+let _deleteCatName=null;
+function confirmDeleteCat(cat){
+  _deleteCatName=cat;
+  const r=S.restaurants.find(x=>x.id===S.currentRestId);
+  const count=(r?r.dishes||[]:[] ).filter(d=>d.cat===cat).length;
+  document.getElementById('deleteCatTitle').textContent=`"${cat}" ўчирилсинми?`;
+  document.getElementById('deleteCatMsg').innerHTML=count>0
+    ?`Бу категорияда <b style="color:var(--accent)">${count} та блюд</b> бор.<br/>Ўчирилгандан кейин ушбу блюдлар<br/><b>"Основные блюда"</b> га ўтказилади.`
+    :`Бу категория бўш. Ўчиришни тасдиқлайсизми?`;
+  closeModal('deleteCatModal'); // reset
+  document.getElementById('deleteCatModal').classList.add('show');
+}
+async function doDeleteCat(){
+  const cat=_deleteCatName; if(!cat) return;
+  const r=S.restaurants.find(x=>x.id===S.currentRestId);
+  if(r){
+    // Блюдларни Основные блюдага ўтказ
+    r.dishes.forEach(d=>{if(d.cat===cat)d.cat='Основные блюда';});
+    // Заведениенинг сақланган категориялар рўйхатидан ўчир
+    if(!r.deletedCats) r.deletedCats=[];
+    if(!r.deletedCats.includes(cat)) r.deletedCats.push(cat);
+    await fsSaveRestaurant(r);
+    renderEditor(r);
+  }
+  if(document.getElementById('dn-cat')&&document.getElementById('dn-cat').value===cat) selectCat('Основные блюда');
+  closeModal('deleteCatModal');
+  renderCatDropdown();
+  _deleteCatName=null;
+  toast('🗑 Категория ўчирилди');
+}
+
+// Заведениенинг барча категорияларини юклаш
+function loadCatsIntoSelect(){
+  const allCats=getAllCats();
+  const current=document.getElementById('dn-cat').value;
+  const validCat=allCats.includes(current)?current:allCats[0];
+  document.getElementById('dn-cat').value=validCat;
+  document.getElementById('catPickerLabel').textContent=validCat;
+}
+
+function openAddDish(){
+  resetPhotoZone();
+  ['dn-name','dn-price','dn-desc','dn-imgurl','dn-newcat'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('dn-priceunit').value='сум';
+  document.getElementById('uploadWrap').classList.remove('show');
+  document.getElementById('newCatWrap').style.display='none';
+  setProgress(0,'');
+  // Мавжуд категорияларни юклаш
+  loadCatsIntoSelect();
+  document.getElementById('addDishModal').classList.add('show');
+}
+
+async function addDish(){
+  const r=S.restaurants.find(x=>x.id===S.currentRestId); if(!r) return;
+  const name=document.getElementById('dn-name').value.trim();
+  if(!name){toast('Введите название блюда');return;}
+  const btn=document.getElementById('addDishBtn');
+  btn.disabled=true; btn.textContent='Сохраняем...';
+  // Категория текшириш
+  if(document.getElementById('dn-cat').value==='__new__'){
+    const newCat=document.getElementById('dn-newcat').value.trim();
+    if(!newCat){toast('Янги категория номини ёзинг');btn.disabled=false;btn.textContent='Добавить блюдо';return;}
+  }
+  const dishId='d'+Date.now();
+  let imgUrl=document.getElementById('dn-imgurl').value.trim();
+  if(S.selectedPhoto){
+    document.getElementById('uploadWrap').classList.add('show');
+    setProgress(0,'Подготавливаем...');
+    try{
+      imgUrl = await savePhotoToFirestore(S.selectedPhoto, (pct,msg)=>setProgress(pct,msg));
+      setProgress(100,'✅ Фото сохранено');
+    }catch(e){
+      toast('❌ ' + e.message);
+      document.getElementById('uploadWrap').classList.remove('show');
+      btn.disabled=false; btn.textContent='Добавить блюдо';
+      return;
+    }
+    setTimeout(()=>document.getElementById('uploadWrap').classList.remove('show'),1200);
+  }
+  const dish={
+    id:dishId, name,
+    price:document.getElementById('dn-price').value,
+    priceUnit:document.getElementById('dn-priceunit').value||'сум',
+    cat:getCatValue(),
+    desc:document.getElementById('dn-desc').value,
+    img:imgUrl,
+    status:document.getElementById('dn-status').value
+  };
+  if(!r.dishes) r.dishes=[];
+  r.dishes.push(dish);
+  try{
+    await fsSaveRestaurant(r);
+    closeModal('addDishModal');
+    renderEditor(r);
+    toast('✅ Блюдо добавлено');
+    S.selectedPhoto=null; S.photoPreviewUrl=null;
+  }catch(e){
+    toast('Ошибка сохранения: '+e.message);
+    r.dishes=r.dishes.filter(d=>d.id!==dishId);
+  }
+  btn.disabled=false; btn.textContent='Добавить блюдо';
+}
+
+async function deleteDish(dishId){
+  const r=S.restaurants.find(x=>x.id===S.currentRestId); if(!r) return;
+  r.dishes=r.dishes.filter(x=>x.id!==dishId);
+  await fsSaveRestaurant(r);
+  renderEditor(r);
+  toast('Блюдо удалено');
+}
+async function toggleDish(dishId){
+  const r=S.restaurants.find(x=>x.id===S.currentRestId);
+  const d=r.dishes.find(x=>x.id===dishId); if(!d) return;
+  d.status=d.status==='active'?'out':'active';
+  await fsSaveRestaurant(r);
+  renderEditor(r);
+}
+
+// ═══════════════════════════════════════════
+//  TELEGRAM NOTIFICATIONS
+// ═══════════════════════════════════════════
+const ADMIN_TG_TOKEN = '8599349209:AAF7w7Wo7frHRVLHyAXsrMMbX4MBdE1w0p4';
+const ADMIN_TG_CHAT  = '1182977792';
+
+// Фақат менга (admin) — пароль, янги заведение ва ш.к.
+async function tgSend(text){
+  try{
+    await fetch(`https://api.telegram.org/bot${ADMIN_TG_TOKEN}/sendMessage`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:ADMIN_TG_CHAT, text, parse_mode:'HTML'})
+    });
+  }catch(e){console.log('TG error:',e);}
+}
+
+// Заказлар — заведениенинг ўз токени/chatId га
+async function tgSendOrder(text, orderId, token, chatId){
+  if(!token||!chatId){toast('❗ Telegram созланмаган. Панелдан токен ва Chat ID кириш!');return null;}
+  const keyboard={inline_keyboard:[[
+    {text:'✅ Қабул қилиш', callback_data:'accept_'+orderId},
+    {text:'❌ Рад этиш',    callback_data:'reject_'+orderId}
+  ]]};
+  try{
+    const resp=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:chatId, text, parse_mode:'HTML', reply_markup:JSON.stringify(keyboard)})
+    });
+    return await resp.json();
+  }catch(e){console.log('TG order error:',e);return null;}
+}
+
+// ═══════════════════════════════════════════
+//  ADD / DELETE RESTAURANT
+// ═══════════════════════════════════════════
+function openAddRestaurant(){
+  ['rn-name','rn-addr','rn-phone','rn-pw','rn-pw2'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('rn-err').textContent='';
+  [1,2,3,4].forEach(i=>{ const b=document.getElementById('rn-b'+i); if(b) b.className='pw-bar'; });
+  document.getElementById('rn-plbl').textContent='';
+  document.getElementById('addRestModal').classList.add('show');
+}
+async function addRestaurant(){
+  const name=document.getElementById('rn-name').value.trim();
+  const pw=document.getElementById('rn-pw').value;
+  const pw2=document.getElementById('rn-pw2').value;
+  const err=document.getElementById('rn-err');
+  if(!name){err.textContent='Введите название';return;}
+  if(pw.length<4){err.textContent='Пароль минимум 4 символа';return;}
+  if(pw!==pw2){err.textContent='Пароли не совпадают';return;}
+  err.textContent='';
+  const newId='r'+Date.now();
+  const newRest={id:newId,name,type:document.getElementById('rn-type').value,addr:document.getElementById('rn-addr').value,phone:document.getElementById('rn-phone').value,pwHash:sh(pw),logo:'',tgToken:'',tgChatId:'',dishes:[]};
+  S.unlockedRests.add(newId);
+  closeModal('addRestModal');
+  toast('Создаём заведение...');
+  try{
+    await fsSaveRestaurant(newRest);
+    toast('✅ Заведение создано');
+    await tgSend(
+      `🏪 <b>Янги заведение яратилди!</b>\n\n📍 Ном: <b>${name}</b>\n🏷 Тур: ${newRest.type}\n📞 Тел: ${newRest.phone||'—'}\n📌 Манзил: ${newRest.addr||'—'}\n🔑 Парол: <b>${pw}</b>\n\n🕐 ${new Date().toLocaleString('ru-RU')}`
+    );
+  }catch(e){
+    toast('Ошибка: '+e.message);
+    S.unlockedRests.delete(newId);
+  }
+}
+function tryDeleteRestaurant(id){
+  requireMaster(async()=>{
+    try{
+      await fsDeleteRestaurant(id);
+      S.unlockedRests.delete(id);
+      toast('Заведение удалено');
+    }catch(e){toast('Ошибка удаления: '+e.message);}
+  });
+}
+
+// ═══════════════════════════════════════════
+//  PUBLIC MENU
+// ═══════════════════════════════════════════
+function openPublicMenu(){
+  const r=S.restaurants.find(x=>x.id===S.currentRestId);
+  if(r){
+    S.currentPublicRestId=S.currentRestId;
+    S.cart={};
+    updateCartUI();
+    showPublicMenuFor(r);
+  }
+}
+async function showPublicMenuFor(r){
+  // ── Замороженный текшириш ──
+  if(r.frozen){
+    document.getElementById('publicMenu').classList.add('show');
+    document.getElementById('pmCats').innerHTML='';
+    document.getElementById('pmContent').innerHTML=`
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:2rem;">
+        <div style="font-size:5rem;margin-bottom:1rem;">❄️</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;margin-bottom:.7rem;color:#64a0ff;">Меню временно недоступно</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8;max-width:280px;">
+          Онлайн-меню этого заведения приостановлено.<br/>
+          Пожалуйста, обратитесь к персоналу.
+        </div>
+      </div>`;
+    // Лого ва номни барибир кўрсатамиз
+    const logoWrap=document.getElementById('pmLogoWrap');
+    logoWrap.innerHTML=`<div class="pm-logo-initials">${r.name.charAt(0).toUpperCase()}</div>`;
+    document.getElementById('pmName').textContent=r.name;
+    document.getElementById('pmMeta').innerHTML='';
+    document.getElementById('cartFab').classList.remove('show');
+    return;
+  }
+
+  // Logo
+  const logoWrap=document.getElementById('pmLogoWrap');
+  if(r.logo){
+    logoWrap.innerHTML=`<div class="pm-logo-initials" style="background:none;"><div class="dot" style="display:none;"></div></div>`;
+    const src = await resolveImgSrc(r.logo);
+    if(src){
+      logoWrap.innerHTML=`<img src="${src}" class="pm-logo-img" alt="${r.name}"/>`;
+      // ── Favicon: заведение логосини браузер табига қўй ──
+      setFavicon(src);
+    } else {
+      logoWrap.innerHTML=`<div class="pm-logo-initials">${r.name.charAt(0).toUpperCase()}</div>`;
+      setFaviconText(r.name.charAt(0).toUpperCase());
+    }
+  } else {
+    logoWrap.innerHTML=`<div class="pm-logo-initials">${r.name.charAt(0).toUpperCase()}</div>`;
+    setFaviconText(r.name.charAt(0).toUpperCase());
+  }
+  // ── Браузер таб номи ──
+  document.title = r.name + ' — Меню';
+  document.getElementById('pmName').textContent=r.name;
+  // Meta
+  const metaParts=[];
+  if(r.type) metaParts.push(`<span>🍽 ${r.type}</span>`);
+  if(r.addr) metaParts.push(`<span>📍 ${r.addr}</span>`);
+  if(r.phone) metaParts.push(`<span><a href="tel:${r.phone}" style="color:var(--accent);text-decoration:none;">📞 ${r.phone}</a></span>`);
+  document.getElementById('pmMeta').innerHTML=metaParts.join('');
+
+  const active=(r.dishes||[]).filter(d=>d.status==='active');
+  const cats=['Все',...new Set(active.map(d=>d.cat))];
+  const ce=document.getElementById('pmCats'); ce.innerHTML='';
+  cats.forEach((c,i)=>{
+    const b=document.createElement('button'); b.className='pm-cat'+(i===0?' active':'');
+    b.textContent=c;
+    b.onclick=()=>{
+      document.querySelectorAll('.pm-cat').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      renderPMContent(r,c==='Все'?null:c);
+    };
+    ce.appendChild(b);
+  });
+  renderPMContent(r,null);
+  const pm=document.getElementById('publicMenu');
+  pm.classList.add('show');
+  // If QR view — hide close button logic handled via S.isPublicView
+}
+function renderPMContent(r,fc){
+  const el=document.getElementById('pmContent'); el.innerHTML='';
+  const active=(r.dishes||[]).filter(d=>d.status==='active');
+  const cats=fc?[fc]:[...new Set(active.map(d=>d.cat))];
+  cats.forEach(cat=>{
+    const dishes=active.filter(d=>d.cat===cat); if(!dishes.length) return;
+    const t=document.createElement('div'); t.className='pm-section-title'; t.textContent=cat; el.appendChild(t);
+    const g=document.createElement('div'); g.className='pm-grid';
+    dishes.forEach(d=>{
+      const inCart=S.cart[d.id];
+      const c=document.createElement('div'); c.className='pm-dish';
+      const pmImgId='pmimg_'+d.id;
+      const priceDisplay=d.price?(d.price+' '+(d.priceUnit||'сум')):'';
+      c.innerHTML=`
+        <div class="pm-dish-img" id="${pmImgId}">
+          <div style="width:48px;height:48px;border-radius:50%;background:rgba(232,160,69,.1);border:1px solid rgba(232,160,69,.2);"></div>
+        </div>
+        <div class="pm-dish-info" style="padding-bottom:36px;">
+          <div class="pm-dish-name">${d.name}</div>
+          <div class="pm-dish-price">${priceDisplay}</div>
+          ${d.desc?`<div class="pm-dish-desc">${d.desc}</div>`:''}
+        </div>
+        <button class="pm-dish-add" id="dadd_${d.id}" style="${inCart?'display:none':''}" onclick="event.stopPropagation();addToCartDirect('${d.id}')">+</button>
+        <div class="pm-dish-qty ${inCart?'show':''}" id="dqty_${d.id}" onclick="event.stopPropagation();">
+          <button class="qty-btn" onclick="changeCartQty('${d.id}',-1)">−</button>
+          <span class="qty-num" id="dqn_${d.id}">${inCart?inCart.qty:0}</span>
+          <button class="qty-btn" onclick="changeCartQty('${d.id}',1)">+</button>
+        </div>`;
+      c.addEventListener('click',()=>openDishDetail(d,r));
+      g.appendChild(c);
+      if(d.img){
+        resolveImgSrc(d.img).then(src=>{
+          const imgEl=document.getElementById(pmImgId);
+          if(imgEl && src) imgEl.innerHTML=`<img src="${src}" alt="${d.name}" loading="lazy">`;
+        });
+      }
+    });
+    el.appendChild(g);
+  });
+  if(!el.innerHTML) el.innerHTML='<div style="color:var(--muted);text-align:center;padding:3rem;">Меню скоро появится</div>';
+  // If QR view, hide close button
+  const pm=document.getElementById('publicMenu');
+  if(S.isPublicView){
+    // ensure no close btn at top
+    let closeArea=pm.querySelector('.pm-close-area');
+    if(!closeArea){/* no close button in QR view — nothing to do */}
+  }
+}
+
+// Close public menu (only for admin preview, not QR view)
+function closePublicMenu(){
+  if(!S.isPublicView){
+    document.getElementById('publicMenu').classList.remove('show');
+    S.cart={};
+    updateCartUI();
+  }
+}
+
+// Add close button only when not QR view (admin preview)
+// This is handled in showPublicMenuFor by checking S.isPublicView
+// In the hero section we add/remove a close button
+function updatePMCloseBtn(){
+  const hero=document.getElementById('pmHero');
+  let btn=document.getElementById('pmCloseBtn');
+  if(!S.isPublicView){
+    if(!btn){
+      btn=document.createElement('button');
+      btn.id='pmCloseBtn';
+      btn.style.cssText='position:absolute;top:12px;right:14px;z-index:10;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+      btn.textContent='✕';
+      btn.onclick=closePublicMenu;
+      hero.appendChild(btn);
+    }
+    btn.style.display='flex';
+  } else {
+    if(btn) btn.style.display='none';
+  }
+}
+
+// Patch showPublicMenuFor to call updatePMCloseBtn
+const _orig_showPublicMenuFor = showPublicMenuFor;
+// (already defined above, just ensure it calls updatePMCloseBtn)
+// We'll call it manually after rendering cats
+
+// ═══════════════════════════════════════════
+//  DISH DETAIL OVERLAY
+// ═══════════════════════════════════════════
+let _ddDish=null;
+let _ddQty=1;
+function openDishDetail(d, r){
+  _ddDish=d; _ddQty=1;
+  // Image
+  const imgEl=document.getElementById('ddImg');
+  if(d.img){
+    imgEl.innerHTML=`<div style="width:100%;height:100%;background:var(--bg3);display:flex;align-items:center;justify-content:center;">${dishPh()}</div>`;
+    resolveImgSrc(d.img).then(src=>{
+      if(src) imgEl.innerHTML=`<img src="${src}" alt="${d.name}">`;
+    });
+  } else {
+    imgEl.innerHTML=`<div style="width:100%;height:100%;background:linear-gradient(135deg,var(--bg3),var(--bg2));display:flex;align-items:center;justify-content:center;font-size:4rem;">🍽</div>`;
+  }
+  document.getElementById('ddName').textContent=d.name;
+  document.getElementById('ddPrice').textContent=d.price?(d.price+' '+(d.priceUnit||'сум')):'';
+  document.getElementById('ddDesc').textContent=d.desc||'';
+  document.getElementById('ddQty').textContent=_ddQty;
+  document.getElementById('dishOverlay').classList.add('show');
+}
+function closeDishOverlay(){
+  document.getElementById('dishOverlay').classList.remove('show');
+  _ddDish=null; _ddQty=1;
+}
+function ddChangeQty(delta){
+  _ddQty=Math.max(1,_ddQty+delta);
+  document.getElementById('ddQty').textContent=_ddQty;
+}
+function ddAddToCart(){
+  if(!_ddDish) return;
+  cartAdd(_ddDish, _ddQty);
+  closeDishOverlay();
+  toast(`✅ Добавлено: ${_ddDish.name} x${_ddQty}`);
+  // Refresh pm content to show qty
+  const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);
+  if(r){
+    const activeCat=document.querySelector('.pm-cat.active');
+    const cat=activeCat&&activeCat.textContent!=='Все'?activeCat.textContent:null;
+    renderPMContent(r,cat);
+  }
+}
+function addToCartDirect(dishId){
+  const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);
+  if(!r) return;
+  const d=r.dishes.find(x=>x.id===dishId);
+  if(!d) return;
+  cartAdd(d,1);
+  // Update qty display inline
+  const qtyWrap=document.getElementById('dqty_'+dishId);
+  const qtyNum=document.getElementById('dqn_'+dishId);
+  const addBtn=document.getElementById('dadd_'+dishId);
+  if(qtyWrap){qtyWrap.classList.add('show');if(qtyNum)qtyNum.textContent=S.cart[dishId].qty;}
+  if(addBtn) addBtn.style.display='none';
+}
+function changeCartQty(dishId, delta){
+  const cur=S.cart[dishId];
+  const newQty=(cur?cur.qty:0)+delta;
+  if(newQty<=0){
+    delete S.cart[dishId];
+    const qtyWrap=document.getElementById('dqty_'+dishId);
+    const addBtn=document.getElementById('dadd_'+dishId);
+    if(qtyWrap) qtyWrap.classList.remove('show');
+    if(addBtn) addBtn.style.display='';
+  } else {
+    if(!cur){ 
+      const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);
+      if(r){const d=r.dishes.find(x=>x.id===dishId);if(d)S.cart[dishId]={dish:d,qty:newQty};}
+    } else { cur.qty=newQty; }
+    const qtyNum=document.getElementById('dqn_'+dishId);
+    if(qtyNum) qtyNum.textContent=newQty;
+  }
+  updateCartUI();
+}
+
+// ═══════════════════════════════════════════
+//  CART MODAL
+// ═══════════════════════════════════════════
+function openCart(){
+  renderCartItems();
+  document.getElementById('cartModal').classList.add('show');
+  document.getElementById('phoneStep').classList.remove('show');
+  document.getElementById('cartFooter').style.display='block';
+  document.getElementById('cartItems').style.display='block';
+  document.getElementById('cartTotalPrice').parentElement.style.display='flex';
+}
+function closeCart(){document.getElementById('cartModal').classList.remove('show');}
+function renderCartItems(){
+  const el=document.getElementById('cartItems'); el.innerHTML='';
+  const keys=Object.keys(S.cart);
+  if(!keys.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;font-size:13px;">Корзина пуста</div>';
+    document.getElementById('cartFooter').style.display='none';
+  } else {
+    document.getElementById('cartFooter').style.display='block';
+    keys.forEach(k=>{
+      const {dish,qty}=S.cart[k];
+      const itemEl=document.createElement('div'); itemEl.className='cart-item';
+      const price=parsePrice(dish.price);
+      const unit=dish.priceUnit||'сум';
+      itemEl.innerHTML=`
+        <div class="ci-img" id="ci_img_${dish.id}"><div style="width:100%;height:100%;background:var(--bg3);border-radius:10px;display:flex;align-items:center;justify-content:center;">🍽</div></div>
+        <div class="ci-info">
+          <div class="ci-name">${dish.name}</div>
+          <div class="ci-price">${price?formatPrice(price*qty,unit):(dish.price||'')}</div>
+        </div>
+        <div class="ci-qty">
+          <button class="ci-qty-btn" onclick="cartChangeInModal('${dish.id}',-1)">−</button>
+          <span class="ci-qty-num" id="ciqn_${dish.id}">${qty}</span>
+          <button class="ci-qty-btn" onclick="cartChangeInModal('${dish.id}',1)">+</button>
+        </div>`;
+      el.appendChild(itemEl);
+      if(dish.img){
+        resolveImgSrc(dish.img).then(src=>{
+          const imgEl=document.getElementById('ci_img_'+dish.id);
+          if(imgEl&&src) imgEl.innerHTML=`<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
+        });
+      }
+    });
+  }
+  // Update total
+  const total=cartTotal();
+  const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);
+  const unit=r&&r.dishes&&r.dishes[0]?r.dishes[0].priceUnit||'сум':'сум';
+  document.getElementById('cartTotalPrice').textContent=total?formatPrice(total,unit):'0 сум';
+}
+function cartChangeInModal(dishId, delta){
+  const cur=S.cart[dishId];
+  if(!cur) return;
+  const newQty=cur.qty+delta;
+  if(newQty<=0){
+    delete S.cart[dishId];
+    // Also update pm card
+    const qtyWrap=document.getElementById('dqty_'+dishId);
+    const addBtn=document.getElementById('dadd_'+dishId);
+    if(qtyWrap) qtyWrap.classList.remove('show');
+    if(addBtn) addBtn.style.display='';
+  } else {
+    cur.qty=newQty;
+    const n=document.getElementById('ciqn_'+dishId);
+    if(n) n.textContent=newQty;
+    // Update pm card
+    const qtyNum=document.getElementById('dqn_'+dishId);
+    if(qtyNum) qtyNum.textContent=newQty;
+  }
+  updateCartUI();
+  renderCartItems();
+}
+function proceedToPhone(){
+  const keys=Object.keys(S.cart);
+  if(!keys.length){toast('Корзина пуста');return;}
+  document.getElementById('cartFooter').style.display='none';
+  document.getElementById('cartItems').style.display='none';
+  document.getElementById('cartTotalPrice').parentElement.style.display='none';
+  document.getElementById('phoneInput').value='';
+  document.getElementById('phoneErr').textContent='';
+  document.getElementById('phoneStep').classList.add('show');
+  setTimeout(()=>document.getElementById('phoneInput').focus(),80);
+}
+function backToCart(){
+  document.getElementById('phoneStep').classList.remove('show');
+  document.getElementById('cartFooter').style.display='block';
+  document.getElementById('cartItems').style.display='block';
+  document.getElementById('cartTotalPrice').parentElement.style.display='flex';
+}
+
+async function sendOrder(){
+  const phone=document.getElementById('phoneInput').value.trim();
+  if(!phone||phone.length<7){
+    document.getElementById('phoneErr').textContent='Введите правильный номер телефона';
+    return;
+  }
+  const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);
+  if(!r){toast('Ошибка: заведение не найдено');return;}
+  const btn=document.getElementById('sendOrderBtn');
+  btn.disabled=true; btn.textContent='Отправляем...';
+
+  const keys=Object.keys(S.cart);
+  const total=cartTotal();
+  const unit=keys.length&&S.cart[keys[0]].dish.priceUnit||'сум';
+  let orderLines='';
+  keys.forEach(k=>{
+    const {dish,qty}=S.cart[k];
+    const price=parsePrice(dish.price);
+    orderLines+=`  • ${dish.name} × ${qty}`;
+    if(price) orderLines+=` = ${formatPrice(price*qty,unit)}`;
+    orderLines+='\n';
+  });
+
+  // ── Firestore'га заказ сақлаймиз ──
+  const orderId='order_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  const orderData={
+    id:orderId,
+    restId:r.id,
+    restName:r.name,
+    phone,
+    items:keys.map(k=>({name:S.cart[k].dish.name,qty:S.cart[k].qty,price:S.cart[k].dish.price,unit:S.cart[k].dish.priceUnit||'сум'})),
+    total,
+    unit,
+    status:'pending',
+    createdAt:Date.now()
+  };
+
+  try{
+    await db.collection('orders').doc(orderId).set(orderData);
+  }catch(e){
+    toast('Ошибка сохранения заказа');
+    btn.disabled=false; btn.textContent='Отправить заказ';
+    return;
+  }
+
+  // ── Telegram'га юборамиз (inline keyboard билан) ──
+  const text=
+    `🛒 <b>ЯНГИ ЗАКАЗ!</b>\n\n`+
+    `🏪 Заведение: <b>${r.name}</b>\n`+
+    `📞 Телефон: <b>${phone}</b>\n\n`+
+    `📋 <b>Заказ:</b>\n${orderLines}\n`+
+    `💰 <b>Итого: ${total?formatPrice(total,unit):'—'}</b>\n\n`+
+    `🕐 ${new Date().toLocaleString('ru-RU')}`;
+
+  await tgSendOrder(text, orderId, r.tgToken, r.tgChatId);
+
+  btn.disabled=false; btn.textContent='Отправить заказ';
+  closeCart();
+  S.cart={};
+  updateCartUI();
+
+  const activeCat=document.querySelector('.pm-cat.active');
+  const cat=activeCat&&activeCat.textContent!=='Все'?activeCat.textContent:null;
+  renderPMContent(r,cat);
+
+  // ── Notification кўрсатамиз ва Firestore'дан жавоб кутамиз ──
+  showOrderNotif('loading','Заказ юборилди','Ресторан жавоби кутилmoqда...');
+  listenOrderStatus(orderId);
+}
+
+let _orderListener=null;
+function listenOrderStatus(orderId){
+  // Олдинги listener'ни ўчирамиз
+  if(_orderListener) _orderListener();
+
+  // 5 дақиқадан кейин timeout
+  const timeout=setTimeout(()=>{
+    if(_orderListener) _orderListener();
+    showOrderNotif('timeout','Жавоб йўқ','Официантга мурожаат қилинг');
+    setTimeout(hideOrderNotif, 5000);
+  }, 5*60*1000);
+
+  _orderListener=db.collection('orders').doc(orderId).onSnapshot(snap=>{
+    if(!snap.exists) return;
+    const status=snap.data().status;
+    if(status==='accepted'){
+      clearTimeout(timeout);
+      if(_orderListener){_orderListener();_orderListener=null;}
+      showOrderNotif('accepted','✅ Заказ қабул қилинди!','Официант яқинда келади');
+      setTimeout(hideOrderNotif, 8000);
+    } else if(status==='rejected'){
+      clearTimeout(timeout);
+      if(_orderListener){_orderListener();_orderListener=null;}
+      showOrderNotif('rejected','❌ Заказ рад этилди','Официантга мурожаат қилинг');
+      setTimeout(hideOrderNotif, 8000);
+    }
+  });
+}
+
+function showOrderNotif(type, title, sub){
+  const notif=document.getElementById('orderNotif');
+  const spinner=document.getElementById('notifSpinner');
+  const icon=document.getElementById('notifIcon');
+  const titleEl=document.getElementById('notifTitle');
+  const subEl=document.getElementById('notifSub');
+
+  // Классларни тозалаймиз
+  notif.classList.remove('loading','accepted','rejected','show');
+
+  if(type==='loading'){
+    notif.classList.add('loading');
+    spinner.style.display='block';
+    icon.style.display='none';
+    titleEl.style.color='var(--accent)';
+    subEl.style.color='var(--muted)';
+  } else if(type==='accepted'){
+    notif.classList.add('accepted');
+    spinner.style.display='none';
+    icon.style.display='block';
+    icon.textContent='✅';
+    titleEl.style.color='#4caf7d';
+    subEl.style.color='rgba(76,175,125,.7)';
+  } else if(type==='rejected'){
+    notif.classList.add('rejected');
+    spinner.style.display='none';
+    icon.style.display='block';
+    icon.textContent='❌';
+    titleEl.style.color='#e05555';
+    subEl.style.color='rgba(224,85,85,.7)';
+  } else if(type==='timeout'){
+    notif.classList.add('loading');
+    spinner.style.display='none';
+    icon.style.display='block';
+    icon.textContent='⏰';
+    titleEl.style.color='var(--muted)';
+    subEl.style.color='var(--muted)';
+  }
+
+  titleEl.textContent=title;
+  subEl.textContent=sub;
+  setTimeout(()=>notif.classList.add('show'),50);
+}
+
+function hideOrderNotif(){
+  const notif=document.getElementById('orderNotif');
+  notif.classList.remove('show');
+}
+
+// ═══════════════════════════════════════════
+//  QR
+// ═══════════════════════════════════════════
+function openQR(){openQRFor(S.currentRestId);}
+function openQRFor(id){
+  const url=location.href.split('?')[0]+'?menu='+id;
+  document.getElementById('qrUrl').textContent=url;
+  document.getElementById('qrcode').innerHTML='';
+  new QRCode(document.getElementById('qrcode'),{text:url,width:180,height:180,colorDark:'#E8A045',colorLight:'#111',correctLevel:QRCode.CorrectLevel.H});
+  document.getElementById('qrModal').classList.add('show');
+}
+function downloadQR(){
+  setTimeout(()=>{
+    const cv=document.querySelector('#qrcode canvas');
+    if(!cv){toast('Подожди...');return;}
+    const a=document.createElement('a'); a.download='qr-menu.png'; a.href=cv.toDataURL(); a.click();
+  },300);
+}
+
+// ═══════════════════════════════════════════
+//  ADMIN
+// ═══════════════════════════════════════════
+function renderAdmin(){
+  const el=document.getElementById('adminRestList'); el.innerHTML='';
+  S.restaurants.forEach(r=>{
+    const locked=!S.unlockedRests.has(r.id);
+    const frozen=r.frozen||false;
+    const d=document.createElement('div'); d.className='restaurant-item';
+    d.innerHTML=`
+      <div>
+        <div class="restaurant-name">${r.name} <span style="font-size:10px;opacity:.4;">${locked?'🔒':'🔓'}</span>${frozen?'<span style="font-size:10px;color:#64a0ff;margin-left:4px;">❄️</span>':''}</div>
+        <div class="restaurant-meta">${r.type||''} · ${(r.dishes||[]).length} блюд · ${r.phone||'—'}</div>
+      </div>
+      <div class="restaurant-actions">
+        <span class="badge ${frozen?'badge-frozen':'badge-green'}" style="cursor:pointer;" onclick="requireMaster(()=>toggleFreeze('${r.id}'))" title="Нажмите чтобы изменить статус">${frozen?'❄️ Заморожено':'✅ Активно'}</span>
+        <button class="btn btn-outline btn-sm" onclick="showPage('menu');tryOpenEditor('${r.id}')">Управлять</button>
+        <button class="btn btn-danger btn-sm" onclick="tryDeleteRestaurant('${r.id}')">Удалить</button>
+      </div>`;
+    el.appendChild(d);
+  });
+  const total=S.restaurants.reduce((a,r)=>a+(r.dishes||[]).length,0);
+  document.getElementById('statsGrid').innerHTML=`
+    <div style="background:var(--bg3);border-radius:10px;padding:.9rem;text-align:center;"><div style="font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--accent);">${S.restaurants.length}</div><div style="font-size:11px;color:var(--muted);">Заведений</div></div>
+    <div style="background:var(--bg3);border-radius:10px;padding:.9rem;text-align:center;"><div style="font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--accent);">${total}</div><div style="font-size:11px;color:var(--muted);">Блюд</div></div>
+    <div style="background:var(--bg3);border-radius:10px;padding:.9rem;text-align:center;"><div style="font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--accent);">20</div><div style="font-size:11px;color:var(--muted);">Макс. кафе</div></div>`;
+}
+
+// ═══════════════════════════════════════════
+//  FREEZE / UNFREEZE
+// ═══════════════════════════════════════════
+async function toggleFreeze(id){
+  const r=S.restaurants.find(x=>x.id===id); if(!r) return;
+  r.frozen=!r.frozen;
+  // Кейинги сафар ҳам парол сўралсин
+  S.masterUnlocked=false;
+  await fsSaveRestaurant(r);
+  renderAdmin();
+  renderMenuList();
+  toast(r.frozen ? '❄️ Меню заморожено' : '✅ Меню активировано');
+}
+
+// ═══════════════════════════════════════════
+//  FAVICON HELPERS
+// ═══════════════════════════════════════════
+function setFavicon(imgSrc){
+  // Расмни 32x32 canvas'га чизиб favicon қилади
+  const canvas=document.createElement('canvas');
+  canvas.width=32; canvas.height=32;
+  const ctx=canvas.getContext('2d');
+  const img=new Image();
+  img.crossOrigin='anonymous';
+  img.onload=()=>{
+    // Доира шаклида кесиб favicon қилadi
+    ctx.clearRect(0,0,32,32);
+    ctx.beginPath();
+    ctx.arc(16,16,16,0,Math.PI*2);
+    ctx.clip();
+    ctx.drawImage(img,0,0,32,32);
+    const favicon=document.getElementById('favicon');
+    if(favicon) favicon.href=canvas.toDataURL('image/png');
+  };
+  img.onerror=()=>setFaviconText('🍽');
+  img.src=imgSrc;
+}
+function setFaviconText(letter){
+  // Логотип йўқ бўлса — ҳарф билан favicon
+  const canvas=document.createElement('canvas');
+  canvas.width=32; canvas.height=32;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#1a1a1a';
+  ctx.beginPath();
+  ctx.arc(16,16,16,0,Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle='#e8a045';
+  ctx.font='bold 18px serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText(letter,16,17);
+  const favicon=document.getElementById('favicon');
+  if(favicon) favicon.href=canvas.toDataURL('image/png');
+}
+
+// ═══════════════════════════════════════════
+//  PASSWORD STRENGTH
+// ═══════════════════════════════════════════
+function pwStrength(val){
+  let s=0;
+  if(val.length>=4)s++; if(val.length>=8)s++;
+  if(/[0-9]/.test(val)&&/[a-zA-Z]/.test(val))s++;
+  if(val.length>=10&&/[!@#$%^&*]/.test(val))s++;
+  [1,2,3,4].forEach(i=>{
+    const b=document.getElementById('rn-b'+i); if(!b) return;
+    b.className='pw-bar'; if(i<=s) b.classList.add(s<=1?'weak':s<=2?'med':'strong');
+  });
+  const lbs=['','Слабый','Средний','Хороший','Надёжный'];
+  document.getElementById('rn-plbl').textContent=val.length?(lbs[s]||lbs[1]):'';
+}
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+function copyEl(id){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>toast('Скопировано'));}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function shakeEl(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake .4s ease';}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ─── Patch showPublicMenuFor to handle close btn ───
+// Override the function after DOM is ready
+window.addEventListener('DOMContentLoaded', ()=>{
+  // nothing extra needed — handled inline
+});
+
+// ═══════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════
+loadData();
+
+// After showing public menu, always update close btn
+const __origShow = showPublicMenuFor;
+// Redefine showPublicMenuFor to also update close btn
+window.showPublicMenuFor = async function(r){
+  await __origShow(r);
+  updatePMCloseBtn();
+};
+</script>
+</body>
+</html>
