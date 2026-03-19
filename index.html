@@ -580,14 +580,26 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
     <!-- Phone step -->
     <div class="phone-step" id="phoneStep">
       <div class="phone-step-title">Введите ваш номер</div>
-      <div class="phone-step-sub">Официант свяжется с вами для подтверждения заказа</div>
+      <div class="phone-step-sub">Рақамингизга SMS код юборамиз</div>
       <div class="phone-input-wrap" style="margin-bottom:10px;">
         <span class="phone-prefix">📞</span>
         <input type="tel" id="phoneInput" placeholder="+998 90 000 00 00" style="font-size:15px;"/>
       </div>
       <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="phoneErr"></div>
-      <button class="btn btn-accent btn-full" id="sendOrderBtn" onclick="sendOrder()">Отправить заказ</button>
+      <button class="btn btn-accent btn-full" id="sendSmsBtn" onclick="sendSmsCode()">📱 SMS код юбориш</button>
       <button class="btn btn-outline btn-full" style="margin-top:7px;" onclick="backToCart()">← Назад</button>
+    </div>
+
+    <!-- SMS Code step -->
+    <div class="phone-step" id="smsCodeStep">
+      <div class="phone-step-title">SMS кодни киритинг</div>
+      <div class="phone-step-sub" id="smsCodeSub">Рақамингизга 4 хонали код юборилди</div>
+      <div style="margin-bottom:10px;">
+        <input type="number" id="smsCodeInput" placeholder="0000" style="font-size:24px;text-align:center;letter-spacing:8px;"/>
+      </div>
+      <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="smsCodeErr"></div>
+      <button class="btn btn-accent btn-full" id="sendOrderBtn" onclick="verifySmsAndOrder()">✅ Тасдиқлаш ва юбориш</button>
+      <button class="btn btn-outline btn-full" style="margin-top:7px;" onclick="backToPhoneStep()">← Назад</button>
     </div>
   </div>
 </div>
@@ -2102,6 +2114,11 @@ function cartChangeInModal(dishId, delta){
   updateCartUI();
   renderCartItems();
 }
+// SMS Gateway URL
+const SMS_GATEWAY_URL = 'https://laughingly-reticuloendothelial-amari.ngrok-free.app/send-sms';
+let _smsCode = null;
+let _smsPhone = null;
+
 function proceedToPhone(){
   const keys=Object.keys(S.cart);
   if(!keys.length){toast('Корзина пуста');return;}
@@ -2111,17 +2128,85 @@ function proceedToPhone(){
   document.getElementById('phoneInput').value='';
   document.getElementById('phoneErr').textContent='';
   document.getElementById('phoneStep').classList.add('show');
+  document.getElementById('smsCodeStep').classList.remove('show');
   setTimeout(()=>document.getElementById('phoneInput').focus(),80);
 }
+
 function backToCart(){
   document.getElementById('phoneStep').classList.remove('show');
+  document.getElementById('smsCodeStep').classList.remove('show');
   document.getElementById('cartFooter').style.display='block';
   document.getElementById('cartItems').style.display='block';
   document.getElementById('cartTotalPrice').parentElement.style.display='flex';
 }
 
-async function sendOrder(){
-  const phone=document.getElementById('phoneInput').value.trim();
+function backToPhoneStep(){
+  document.getElementById('smsCodeStep').classList.remove('show');
+  document.getElementById('phoneStep').classList.add('show');
+}
+
+async function sendSmsCode(){
+  const phone = document.getElementById('phoneInput').value.trim();
+  if(!phone || phone.length < 7){
+    document.getElementById('phoneErr').textContent = 'Тўғри рақам киритинг';
+    return;
+  }
+  const btn = document.getElementById('sendSmsBtn');
+  btn.disabled = true;
+  btn.textContent = 'Юборяпмиз...';
+
+  // 4 хонали код яратиш
+  _smsCode = Math.floor(1000 + Math.random() * 9000);
+  _smsPhone = phone;
+
+  try {
+    const resp = await fetch(SMS_GATEWAY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
+      body: JSON.stringify({
+        phone: phone,
+        message: `MenuPost: tasdiqlash kodingiz ${_smsCode}`
+      })
+    });
+
+    if(resp.ok){
+      document.getElementById('phoneStep').classList.remove('show');
+      document.getElementById('smsCodeStep').classList.add('show');
+      document.getElementById('smsCodeSub').textContent = `${phone} рақамига код юборилди`;
+      document.getElementById('smsCodeInput').value = '';
+      document.getElementById('smsCodeErr').textContent = '';
+      toast('✅ SMS код юборилди!');
+    } else {
+      document.getElementById('phoneErr').textContent = 'SMS юборишда хато. Qayta urinib ko\'ring.';
+    }
+  } catch(e) {
+    // SMS gateway ишламаса — кодсиз давом этамиз
+    document.getElementById('phoneStep').classList.remove('show');
+    document.getElementById('smsCodeStep').classList.add('show');
+    document.getElementById('smsCodeSub').textContent = `${phone} рақамига код юборилди (demo: ${_smsCode})`;
+    toast('⚠️ SMS gateway офлайн, демо режим');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '📱 SMS код юбориш';
+}
+
+async function verifySmsAndOrder(){
+  const userCode = parseInt(document.getElementById('smsCodeInput').value);
+  if(!userCode || userCode !== _smsCode){
+    document.getElementById('smsCodeErr').textContent = '❌ Нотўғри код! Қайта киритинг.';
+    return;
+  }
+  document.getElementById('smsCodeErr').textContent = '';
+  // Код тўғри — заказни юборамиз
+  await sendOrder(_smsPhone);
+}
+
+async function sendOrder(phoneOverride){
+  const phone = phoneOverride || document.getElementById('phoneInput').value.trim();
   if(!phone||phone.length<7){
     document.getElementById('phoneErr').textContent='Введите правильный номер телефона';
     return;
