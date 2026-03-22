@@ -1,93 +1,127 @@
+// netlify/functions/webhook.js
+// Netlify Environment Variables:
+//   BOT_TOKEN            = бот токени
+//   FIREBASE_PROJECT_ID  = menyu-cc1ad
+//   FIREBASE_CLIENT_EMAIL = ...
+//   FIREBASE_PRIVATE_KEY  = ...
+
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 
 async function tg(method, data) {
-    return fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    }).then(res => res.json());
+  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
 }
 
 exports.handler = async (event) => {
-    if (event.httpMethod !== 'POST') return { statusCode: 200, body: 'OK' };
+  if (event.httpMethod !== 'POST') return { statusCode: 200, body: 'OK' };
 
-    const body = JSON.parse(event.body || '{}');
-    console.log("Aynan kelgan ma'lumot:", JSON.stringify(body));
+  let body;
+  try { body = JSON.parse(event.body || '{}'); }
+  catch (e) { return { statusCode: 200, body: 'Bad JSON' }; }
 
-    const cq = body.callback_query;
-    if (cq) {
-        const data = cq.data; // "accept_order_1773856156913_anlr"
-        const chatId = cq.message.chat.id;
-        const msgId = cq.message.message_id;
+  // /start
+  if (body.message?.text === '/start') {
+    await tg('sendMessage', {
+      chat_id: body.message.chat.id,
+      text: '🍽️ <b>MenuPost Bot</b>\n\nZakazlar shu yerga tushadi.\nTugmalar orqali boshqaring.',
+      parse_mode: 'HTML',
+    });
+    return { statusCode: 200, body: 'OK' };
+  }
 
-        // Logda ko'ringan dataga moslab tekshiramiz
-        const isAccept = data.includes('accept');
-        const statusEmoji = isAccept ? "✅" : "❌";
-        const statusText = isAccept ? "ҚАБУЛ ҚИЛИНДИ" : "РАД ЭТИЛДИ";
+  const cq = body.callback_query;
+  if (!cq) return { statusCode: 200, body: 'OK' };
 
-        try {
-            // 1. Telegramdagi "aylanish"ni to'xtatish
-            await tg('answerCallbackQuery', { 
-                callback_query_id: cq.id,
-                text: isAccept ? "Zakaz qabul qilindi" : "Zakaz rad etildi"
-            });
+  const data      = cq.data || '';
+  const chatId    = cq.message.chat.id;
+  const messageId = cq.message.message_id;
+  const cbId      = cq.id;
+  const origText  = cq.message.text || '';
 
-            // 2. Xabar matnini yangilash va tugmalarni o'chirish
-            const updatedText = cq.message.text + `\n\n${statusEmoji} <b>STATUS: ${statusText}</b>`;
-            
-            await tg('editMessageText', {
-                chat_id: chatId,
-                message_id: msgId,
-                text: updatedText,
-                parse_mode: 'HTML',
-                reply_markup: { inline_keyboard: [] } // Tugmalarni o'chiradi
-            });
+  const isAccept = data.startsWith('accept_');
+  const isReject = data.startsWith('reject_');
 
-            console.log("Xabar muvaffaqiyatli yangilandi");
-        } catch (err) {
-            console.error("Xatolik yuz berdi:", err);
-        }
+  if (!isAccept && !isReject) {
+    await tg('answerCallbackQuery', { callback_query_id: cbId, text: "Noma'lum buyruq" });
+    return { statusCode: 200, body: 'OK' };
+  }
 
-        return { statusCode: 200, body: 'OK' };
+  // callback_data format: accept_+998901234567_order_1234567890_abcd
+  const withoutPrefix = data.replace(/^(accept_|reject_)/, '');
+  const orderIdx = withoutPrefix.indexOf('_order_');
+  let phone   = orderIdx >= 0 ? withoutPrefix.slice(0, orderIdx) : '';
+  let orderId = orderIdx >= 0 ? withoutPrefix.slice(orderIdx + 1) : withoutPrefix;
+
+  const action     = isAccept ? 'accepted' : 'rejected';
+  const statusLine = isAccept ? '✅ ҚАБУЛ ҚИЛИНДИ' : '❌ РАД ЭТИЛДИ';
+  const notifText  = isAccept ? '✅ Zakaz qabul qilindi!' : '❌ Zakaz rad etildi';
+
+  // Tel URL — faqat raqamlar
+  const telUrl = phone ? 'tel:+' + phone.replace(/[^0-9]/g, '') : null;
+
+  // Tugmalarni yangilaymiz:
+  // Qabul: faqat Tel qoladi
+  // Rad:   Qabul + Tel qoladi (adashib bosib qabul qila olsin)
+  let newKeyboard;
+  if (isAccept) {
+    newKeyboard = telUrl
+      ? { inline_keyboard: [[{ text: '📞 Tel qilish', url: telUrl }]] }
+      : { inline_keyboard: [] };
+  } else {
+    const row = [];
+    row.push({
+      text: '✅ Қабул қилиш',
+      callback_data: 'accept_' + (phone ? phone + '_' : '') + orderId
+    });
+    if (telUrl) row.push({ text: '📞 Tel qilish', url: telUrl });
+    newKeyboard = { inline_keyboard: [row] };
+  }
+
+  // 1. Xabarni yangilaymiz
+  try {
+    await tg('editMessageText', {
+      chat_id:      chatId,
+      message_id:   messageId,
+      text:         origText + '\n\n' + statusLine,
+      parse_mode:   'HTML',
+      reply_markup: newKeyboard,
+    });
+  } catch (e) {
+    console.warn('editMessageText:', e.message);
+  }
+
+  // 2. Tugmadagi "yuklanmoqda" ni to'xtatamiz
+  try {
+    await tg('answerCallbackQuery', { callback_query_id: cbId, text: notifText });
+  } catch (e) {
+    console.warn('answerCallbackQuery:', e.message);
+  }
+
+  // 3. Firestore statusni yangilaymiz
+  try {
+    const admin = require('firebase-admin');
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId:   process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey:  process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        }),
+      });
     }
+    const db  = admin.firestore();
+    const ref = db.collection('orders').doc(orderId);
+    const snap = await ref.get();
+    if (snap.exists && snap.data().status === 'pending') {
+      await ref.update({ status: action, updatedAt: Date.now() });
+    }
+  } catch (e) {
+    console.warn('Firestore skipped:', e.message);
+  }
 
-    return { statusCode: 200, body: 'No Action' };
+  return { statusCode: 200, body: 'OK' };
 };
-
-async function finishOrder() {
-    const phone = document.getElementById('customerPhone').value;
-    if (!phone) return alert("Telefon raqamingizni yozing!");
-
-    // Savatchadagi ma'lumotlarni yig'ish (sizning kodingizga moslab)
-    const orderData = {
-        type: 'new_order',
-        orderId: Date.now().toString().slice(-6), // Tasodifiy ID
-        items: "Osh (2x), Choy (1x)", // Buni dinamik qiling
-        total: "120,000",
-        phone: phone
-    };
-
-    try {
-        const response = await fetch('/.netlify/functions/webhook', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderData)
-        });
-
-        if (response.ok) {
-            alert("✅ Buyurtma yuborildi! Tez orada bog'lanamiz.");
-        } else {
-            alert("❌ Xatolik yuz berdi.");
-        }
-    } catch (err) {
-        console.error(err);
-    }
-}
-
-exports.handler = async (event) => {
-    const body = JSON.parse(event.body || '{}');
-    console.log("Aynan kelgan ma'lumot:", body); // SHUNI QO'SHING
-    
-    // qolgan kodlar...
-}

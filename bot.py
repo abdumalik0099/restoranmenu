@@ -31,7 +31,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = "✅ ЗАКАЗ ҚАБУЛ ҚИЛИНДИ!" if status == "accepted" else "❌ ЗАКАЗ РАД ЭТИЛДИ."
     await query.message.reply_text(text)
 
-BOT_TOKEN = "8599349209:AAF7w7Wo7frHRVLHyAXsrMMbX4MBdE1w0p4"
+BOT_TOKEN = "8747650320:AAFrKHSF3wJvsGrRJIagLJ7i_WhMGLExXLQ"
 app = Application.builder().token(BOT_TOKEN).build()
 app.add_handler(CallbackQueryHandler(handle_button))
 print("✅ Bot ishlamoqda...")
