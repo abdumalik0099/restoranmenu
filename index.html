@@ -234,6 +234,10 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
 
 .dev-tab-btn{background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 16px;font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .2s;}
 .dev-tab-btn.active{background:rgba(232,160,69,.15);border-color:rgba(232,160,69,.4);color:var(--accent);font-weight:500;}
+
+.reject-reason-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;font-size:13px;cursor:pointer;text-align:left;font-family:"DM Sans",sans-serif;transition:all .2s;}
+.reject-reason-btn:hover{border-color:rgba(224,85,85,.4);background:rgba(224,85,85,.08);color:var(--red);}
+.reject-reason-btn.selected{border-color:var(--red);background:rgba(224,85,85,.12);color:var(--red);}
 </style>
 </head>
 <body>
@@ -329,6 +333,7 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
         <button class="btn btn-outline btn-sm" onclick="openQR()">QR-код</button>
         <button class="btn btn-outline btn-sm" onclick="openChangePw()">Пароль</button>
         <button class="btn btn-accent btn-sm" onclick="openAddDish()">+ Блюдо</button>
+        <button class="btn btn-outline btn-sm" onclick="openRestStats()">📊 Статистика</button>
       </div>
     </div>
     <div class="category-tabs" id="catTabs"></div>
@@ -1223,6 +1228,178 @@ function drawLineChart(el, days, maxCnt){
   </div>`;
 }
 
+
+// ═══ RESTAURANT STATS MODAL ═══
+let _restStatsListeners = [];
+
+async function openRestStats(){
+  const r = S.restaurants.find(x=>x.id===S.currentRestId);
+  if(!r) return;
+  document.getElementById('restStatsModalTitle').textContent = '📊 ' + r.name + ' — Статистика';
+  document.getElementById('restStatsModal').classList.add('show');
+  await loadRestStatsModal(r);
+}
+
+async function loadRestStatsModal(r){
+  _restStatsListeners.forEach(fn=>fn());
+  _restStatsListeners=[];
+  const el = document.getElementById('restStatsModalContent');
+  el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);">Юкланяпти...</div>';
+
+  // Build HTML
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:1.3rem;">
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem;text-align:center;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">👁 Кириш</div>
+        <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--accent);" id="rsv_${r.id}">0</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem;text-align:center;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🛒 Заказлар</div>
+        <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:#64a0ff;" id="rso_${r.id}">0</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem;text-align:center;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">✅ Қабул</div>
+        <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--green);" id="rsa_${r.id}">0</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem;text-align:center;cursor:pointer;" onclick="showRejectReasons('${r.id}')" title="Босинг — сабабларни кўринг">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">❌ Рад <span style="font-size:9px;opacity:.5;">(босинг)</span></div>
+        <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--red);" id="rsr_${r.id}">0</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem;text-align:center;grid-column:1/-1;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">💰 Даромад (қабул қилинган)</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;color:var(--accent);" id="rsrev_${r.id}">0 сум</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:.6rem;font-weight:500;">📈 Сўнгги 14 кун</div>
+    <div style="position:relative;width:100%;height:120px;" id="rschart_${r.id}">
+      <div style="color:var(--muted);font-size:11px;">Юкланяпти...</div>
+    </div>
+  `;
+
+  // Realtime orders
+  const unsub1 = db.collection('orders').where('restId','==',r.id).onSnapshot(snap=>{
+    const orders = snap.docs.map(d=>d.data());
+    const total = orders.length;
+    const accepted = orders.filter(o=>o.status==='accepted').length;
+    const rejected = orders.filter(o=>o.status==='rejected').length;
+    const revenue = orders.filter(o=>o.status==='accepted').reduce((s,o)=>s+(o.total||0),0);
+    const unit = orders.length ? (orders[0].unit||'сум') : 'сум';
+
+    const e1=document.getElementById('rso_'+r.id);
+    const e2=document.getElementById('rsa_'+r.id);
+    const e3=document.getElementById('rsr_'+r.id);
+    const e4=document.getElementById('rsrev_'+r.id);
+    if(e1)e1.textContent=total;
+    if(e2)e2.textContent=accepted;
+    if(e3)e3.textContent=rejected;
+    if(e4)e4.textContent=revenue?formatPrice(revenue,unit):'0 '+unit;
+
+    // Chart
+    const days=[];
+    for(let i=13;i>=0;i--){
+      const d=new Date();d.setDate(d.getDate()-i);
+      const label=d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
+      const start=new Date(d);start.setHours(0,0,0,0);
+      const end=new Date(d);end.setHours(23,59,59,999);
+      const cnt=orders.filter(o=>o.createdAt>=start.getTime()&&o.createdAt<=end.getTime()).length;
+      const acnt=orders.filter(o=>o.status==='accepted'&&o.createdAt>=start.getTime()&&o.createdAt<=end.getTime()).length;
+      days.push({label,cnt,acnt});
+    }
+    const maxCnt=Math.max(...days.map(d=>d.cnt),1);
+    const chartEl=document.getElementById('rschart_'+r.id);
+    if(chartEl) drawLineChart(chartEl,days,maxCnt);
+  });
+  _restStatsListeners.push(unsub1);
+
+  // Realtime visits
+  const unsub2 = db.collection('stats').where('restId','==',r.id).onSnapshot(snap=>{
+    const totalV=snap.docs.reduce((s,d)=>s+(d.data().visits||0),0);
+    const ev=document.getElementById('rsv_'+r.id);
+    if(ev)ev.textContent=totalV||0;
+  });
+  _restStatsListeners.push(unsub2);
+}
+
+// Show reject reasons list
+async function showRejectReasons(restId){
+  const listEl = document.getElementById('rejectReasonsList');
+  listEl.innerHTML = '<div style="color:var(--muted);padding:1rem;text-align:center;">Юкланяпти...</div>';
+  document.getElementById('rejectReasonsListModal').classList.add('show');
+
+  try{
+    const snap = await db.collection('orders')
+      .where('restId','==',restId)
+      .where('status','==','rejected')
+      .get();
+
+    if(snap.empty){
+      listEl.innerHTML='<div style="color:var(--muted);padding:1rem;text-align:center;">Рад этилган заказлар йўқ</div>';
+      return;
+    }
+
+    listEl.innerHTML='';
+    snap.docs.forEach(d=>{
+      const o=d.data();
+      const date=o.createdAt?new Date(o.createdAt).toLocaleString('ru-RU'):'—';
+      const reason=o.rejectReason||'Сабаб кўрсатилмаган';
+      const div=document.createElement('div');
+      div.style.cssText='background:var(--bg3);border-radius:10px;padding:.9rem 1rem;border-left:3px solid var(--red);';
+      div.innerHTML=`
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <div style="font-size:13px;font-weight:500;">📞 ${o.phone||'—'}</div>
+          <div style="font-size:11px;color:var(--muted);">#${o.orderNum||'?'} · ${date}</div>
+        </div>
+        <div style="font-size:12px;color:var(--red);">❌ Сабаб: ${reason}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;">
+          ${(o.items||[]).map(i=>i.name+' × '+i.qty).join(', ')}
+        </div>`;
+      listEl.appendChild(div);
+    });
+  }catch(e){
+    listEl.innerHTML='<div style="color:var(--red);padding:1rem;">Хато: '+e.message+'</div>';
+  }
+}
+
+// ═══ REJECT REASON (from public menu - not used directly, webhook handles it) ═══
+// For admin panel - when viewing stats
+let _selectedRejectReason = '';
+let _pendingRejectData = null;
+
+function selectRejectReason(btn, reason){
+  document.querySelectorAll('.reject-reason-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  _selectedRejectReason = reason;
+  if(reason==='Бошқа сабаб'){
+    document.getElementById('customReasonWrap').style.display='block';
+    setTimeout(()=>document.getElementById('customReasonInput').focus(),50);
+  } else {
+    document.getElementById('customReasonWrap').style.display='none';
+  }
+  document.getElementById('rejectReasonErr').textContent='';
+}
+
+function submitRejectReason(){
+  let reason = _selectedRejectReason;
+  if(reason==='Бошқа сабаб'){
+    reason = document.getElementById('customReasonInput').value.trim();
+    if(!reason){document.getElementById('rejectReasonErr').textContent='Сабабни ёзинг';return;}
+  }
+  if(!reason){document.getElementById('rejectReasonErr').textContent='Сабабни танланг';return;}
+
+  if(_pendingRejectData){
+    const {orderId, chatId, messageId, origText, cbId, acceptData} = _pendingRejectData;
+    // Save reason to firestore
+    db.collection('orders').doc(orderId).update({rejectReason: reason}).catch(()=>{});
+    closeModal('rejectReasonModal');
+    _pendingRejectData=null;
+    _selectedRejectReason='';
+    toast('❌ Рад этилди: '+reason);
+  }
+}
+
+// Close restStatsModal - stop listeners
+const _origCloseModal = closeModal;
+
 loadData();
 const __origShow=showPublicMenuFor;
 window.showPublicMenuFor=async function(r){await __origShow(r);updatePMCloseBtn();};
@@ -1295,6 +1472,48 @@ window.showPublicMenuFor=async function(r){await __origShow(r);updatePMCloseBtn(
       </div>
 
     </div>
+  </div>
+</div>
+
+<!-- REJECT REASON MODAL -->
+<div class="modal-overlay" id="rejectReasonModal">
+  <div class="modal" style="max-width:400px;">
+    <button class="modal-close" onclick="closeModal('rejectReasonModal')">✕</button>
+    <div class="modal-title">❌ Рад этиш сабаби</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:1rem;">Мижозга нима сабабдан рад этилганини айтинг:</div>
+    <div style="display:grid;gap:8px;margin-bottom:1rem;">
+      <button class="reject-reason-btn" onclick="selectRejectReason(this,'Таом тугаган')">🍽 Таом тугаган</button>
+      <button class="reject-reason-btn" onclick="selectRejectReason(this,'Ресторан ёпилган')">🚪 Ресторан ёпилган</button>
+      <button class="reject-reason-btn" onclick="selectRejectReason(this,'Жуда кўп заказ бор')">⏳ Жуда кўп заказ бор</button>
+      <button class="reject-reason-btn" onclick="selectRejectReason(this,'Манзил узоқ')">📍 Манзил узоқ</button>
+      <button class="reject-reason-btn" onclick="selectRejectReason(this,'Бошқа сабаб')">✏️ Бошқа сабаб</button>
+    </div>
+    <div id="customReasonWrap" style="display:none;margin-bottom:1rem;">
+      <input id="customReasonInput" placeholder="Сабабни ёзинг..." style="width:100%;"/>
+    </div>
+    <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="rejectReasonErr"></div>
+    <button class="btn btn-danger btn-full" onclick="submitRejectReason()">❌ Рад этишни тасдиқлаш</button>
+    <button class="btn btn-outline btn-full" style="margin-top:7px;" onclick="closeModal('rejectReasonModal')">Бекор қилиш</button>
+  </div>
+</div>
+
+<!-- REST STATS MODAL -->
+<div class="modal-overlay" id="restStatsModal">
+  <div class="modal" style="max-width:600px;">
+    <button class="modal-close" onclick="closeModal('restStatsModal')">✕</button>
+    <div class="modal-title" id="restStatsModalTitle">📊 Статистика</div>
+    <div id="restStatsModalContent">
+      <div style="text-align:center;padding:2rem;color:var(--muted);">Юкланяпти...</div>
+    </div>
+  </div>
+</div>
+
+<!-- REJECT REASONS LIST MODAL -->
+<div class="modal-overlay" id="rejectReasonsListModal">
+  <div class="modal" style="max-width:480px;">
+    <button class="modal-close" onclick="closeModal('rejectReasonsListModal')">✕</button>
+    <div class="modal-title">❌ Рад этилган заказлар сабаблари</div>
+    <div id="rejectReasonsList" style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;"></div>
   </div>
 </div>
 </body>
