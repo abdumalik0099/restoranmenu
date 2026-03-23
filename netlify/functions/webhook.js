@@ -1,7 +1,6 @@
 // netlify/functions/webhook.js
-// Hech qanday npm package kerak emas!
-
-const BOT_TOKEN = process.env.BOT_TOKEN;
+const BOT_TOKEN        = process.env.BOT_TOKEN;
+const FIREBASE_PROJECT = process.env.FIREBASE_PROJECT || 'menyu-cc1ad';
 
 async function tg(method, data) {
   const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
@@ -12,94 +11,130 @@ async function tg(method, data) {
   return res.json();
 }
 
+async function updateOrder(orderId, fields) {
+  const fieldMap = {};
+  for(const [k,v] of Object.entries(fields)){
+    if(typeof v === 'string') fieldMap[k] = { stringValue: v };
+    if(typeof v === 'number') fieldMap[k] = { integerValue: String(v) };
+  }
+  const keys = Object.keys(fields).map(k=>'updateMask.fieldPaths='+k).join('&');
+  const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT}/databases/(default)/documents/orders/${orderId}?${keys}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: fieldMap })
+  });
+  return res.json();
+}
+
+const REJECT_REASONS = [
+  { text: '🍽 Таом тугаган',        key: 'food_out'  },
+  { text: '🚪 Ресторан ёпилган',    key: 'closed'    },
+  { text: '⏳ Жуда кўп заказ бор',  key: 'busy'      },
+  { text: '📍 Манзил узоқ',         key: 'far'       },
+  { text: '✏️ Бошқа сабаб',         key: 'other'     },
+];
+
+const REASON_LABELS = {
+  food_out: 'Таом тугаган',
+  closed:   'Ресторан ёпилган',
+  busy:     'Жуда кўп заказ бор',
+  far:      'Манзил узоқ',
+  other:    'Бошқа сабаб',
+};
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 200, body: 'OK' };
 
   let body;
   try { body = JSON.parse(event.body || '{}'); }
-  catch (e) { return { statusCode: 200, body: 'Bad JSON' }; }
+  catch (e) { return { statusCode: 200, body: 'OK' }; }
 
-  // /start
-  if (body.message?.text === '/start') {
-    await tg('sendMessage', {
-      chat_id: body.message.chat.id,
-      text: '🍽️ <b>MenuPost Bot</b>\n\nZakazlar shu yerga tushadi.\nTugmalar orqali boshqaring.',
-      parse_mode: 'HTML',
-    });
-    return { statusCode: 200, body: 'OK' };
-  }
-
-  // Tugma bosildi
   const cq = body.callback_query;
   if (!cq) return { statusCode: 200, body: 'OK' };
 
-  const cbId    = cq.id;
-  const chatId  = cq.message?.chat?.id;
-  const msgId   = cq.message?.message_id;
-  const data    = cq.data || '';
-  const origText = cq.message?.text || '';
+  const cbId      = cq.id;
+  const chatId    = cq.message.chat.id;
+  const messageId = cq.message.message_id;
+  const data      = cq.data || '';
+  // origText — faqat YANGI ZAKAZ qismini olamiz (status qo'shilmagan)
+  const fullText  = cq.message.text || '';
+  // Eski status qatorlarini olib tashlaymiz (agar avval bosilgan bo'lsa)
+  const cleanText = fullText
+    .replace(/\n\n✅ ҚАБУЛ ҚИЛИНДИ.*/s, '')
+    .replace(/\n\n❌ РАД ЭТИЛДИ.*/s, '')
+    .replace(/\n\n⚠️ Рад этиш сабабини танланг:.*/s, '')
+    .trim();
 
-  // ── QABUL QILISH ──────────────────────────────────────
+  // ── ACCEPT ──
   if (data.startsWith('accept_')) {
-    // format: accept_PHONE_orderID
-  const parts = data.replace('accept_', '').split('_order_');
-  const phone = parts[0];
-  const orderId = parts[1] ? 'order_' + parts[1] : '';
+    const wp = data.replace('accept_', '');
+    const oi = wp.indexOf('_order_');
+    const orderId = oi >= 0 ? wp.slice(oi + 1) : wp;
 
-    // Xabarni yangilaymiz: qabul + tel tugmasi qoladi
     await tg('editMessageText', {
-      chat_id:    chatId,
-      message_id: msgId,
-      text:       origText + '\n\n✅ <b>QABUL QILINDI</b>',
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [[
-          // Rad etish yo'qoldi, faqat Tel qilish qoldi
-          { text: '📞 Tel qilish', url: 'tel:+' + phone.replace(/[^0-9]/g, '') }
-        ]]
-      }
+      chat_id:      chatId,
+      message_id:   messageId,
+      text:         cleanText + '\n\n✅ ҚАБУЛ ҚИЛИНДИ',
+      parse_mode:   'HTML',
+      reply_markup: { inline_keyboard: [] }
     });
-
-    await tg('answerCallbackQuery', {
-      callback_query_id: cbId,
-      text: '✅ Zakaz qabul qilindi!',
-      show_alert: false,
-    });
+    await tg('answerCallbackQuery', { callback_query_id: cbId, text: '✅ Qabul qilindi!' });
+    try { await updateOrder(orderId, { status: 'accepted', updatedAt: Date.now() }); }
+    catch(e) { console.warn(e.message); }
     return { statusCode: 200, body: 'OK' };
   }
 
-  // ── RAD ETISH ──────────────────────────────────────────
+  // ── REJECT — sabablarni ko'rsat ──
   if (data.startsWith('reject_')) {
-    // format: reject_PHONE_orderID  
-  const parts = data.replace('reject_', '').split('_order_');
-  const phone = parts[0];
-  const orderId = parts[1] ? 'order_' + parts[1] : '';
+    const wp = data.replace('reject_', '');
+    const oi = wp.indexOf('_order_');
+    const orderId = oi >= 0 ? wp.slice(oi + 1) : wp;
 
-    // Xabarni yangilaymiz: rad + qabul + tel tugmalari
-    // Qabul tugmasi qoladi (adashib bosib yuborsa ham ishlaydi)
+    const keyboard = {
+      inline_keyboard: REJECT_REASONS.map(r => ([{
+        text: r.text,
+        callback_data: `rsn_${r.key}__${orderId}`
+      }]))
+    };
+
     await tg('editMessageText', {
-      chat_id:    chatId,
-      message_id: msgId,
-      text:       origText + '\n\n❌ <b>RAD ETILDI</b>',
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [[
-          // Rad etish yo'qoldi, faqat Qabul + Tel qoldi
-          { text: '✅ Qabul qilish', callback_data: `accept_${phone}` },
-          { text: '📞 Tel qilish',   url: 'tel:+' + phone.replace(/[^0-9]/g, '') }
-        ]]
-      }
+      chat_id:      chatId,
+      message_id:   messageId,
+      text:         cleanText + '\n\n⚠️ Рад этиш сабабини танланг:',
+      parse_mode:   'HTML',
+      reply_markup: keyboard
     });
-
-    await tg('answerCallbackQuery', {
-      callback_query_id: cbId,
-      text: '❌ Zakaz rad etildi.',
-      show_alert: false,
-    });
+    await tg('answerCallbackQuery', { callback_query_id: cbId, text: 'Сабабни танланг 👇' });
     return { statusCode: 200, body: 'OK' };
   }
 
-  // Noma'lum callback
+  // ── REASON selected ──
+  if (data.startsWith('rsn_')) {
+    // format: rsn_KEY__orderId
+    const parts   = data.replace('rsn_', '').split('__');
+    const key     = parts[0];
+    const orderId = parts[1];
+    const reason  = REASON_LABELS[key] || 'Бошқа сабаб';
+
+    await tg('editMessageText', {
+      chat_id:      chatId,
+      message_id:   messageId,
+      text:         cleanText + '\n\n❌ РАД ЭТИЛДИ\n📝 Сабаб: ' + reason,
+      parse_mode:   'HTML',
+      reply_markup: { inline_keyboard: [] }
+    });
+    await tg('answerCallbackQuery', { callback_query_id: cbId, text: '❌ ' + reason });
+    try {
+      await updateOrder(orderId, {
+        status:       'rejected',
+        rejectReason: reason,
+        updatedAt:    Date.now()
+      });
+    } catch(e) { console.warn(e.message); }
+    return { statusCode: 200, body: 'OK' };
+  }
+
   await tg('answerCallbackQuery', { callback_query_id: cbId, text: '' });
   return { statusCode: 200, body: 'OK' };
 };
