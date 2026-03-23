@@ -231,6 +231,9 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
   .pw-box{border-radius:18px 18px 0 0;width:100%;max-width:100%;}
   .pm-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
 }
+
+.dev-tab-btn{background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 16px;font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .2s;}
+.dev-tab-btn.active{background:rgba(232,160,69,.15);border-color:rgba(232,160,69,.4);color:var(--accent);font-weight:500;}
 </style>
 </head>
 <body>
@@ -308,7 +311,7 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
   <div id="menuListView">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:9px;">
       <div><div style="font-family:'Playfair Display',serif;font-size:1.35rem;">Онлайн меню</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">Управляй меню заведений</div></div>
-      <button class="btn btn-accent btn-sm" onclick="requireMaster(openAddRestaurant)">+ Новое заведение</button>
+      <button class="btn btn-accent btn-sm" onclick="openDevPanel()">+ Новое заведение</button>
     </div>
     <div class="restaurant-list" id="menuRestList"></div>
   </div>
@@ -335,17 +338,14 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
 
 <div class="page" id="page-admin">
   <div class="card">
-    <div class="card-title">Панель администратора</div>
-    <div class="card-sub">Мастер-пароль по умолчанию: <b style="color:var(--accent)">admin</b> — сразу смените!</div>
-    <div class="restaurant-list" id="adminRestList"></div>
-    <div style="margin-top:1rem;display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-accent btn-sm" onclick="requireMaster(openAddRestaurant)">+ Добавить заведение</button>
-      <button class="btn btn-outline btn-sm" onclick="openChangeMasterPw()">Изменить мастер-пароль</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;">
+      <div>
+        <div class="card-title" style="margin-bottom:0;">Заведениялар</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;">Барча ресторан ва кафелар рўйхати</div>
+      </div>
+      <button class="btn btn-accent" onclick="openDevPanel()" style="padding:10px 20px;">⚙️ Панель разработчика</button>
     </div>
-  </div>
-  <div class="card">
-    <div class="card-title">Статистика</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:11px;margin-top:9px;" id="statsGrid"></div>
+    <div style="margin-top:1rem;" class="restaurant-list" id="adminRestList"></div>
   </div>
 </div>
 
@@ -423,26 +423,7 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
 </div>
 
 <!-- MODALS -->
-<div class="modal-overlay" id="addRestModal"><div class="modal">
-  <button class="modal-close" onclick="closeModal('addRestModal')">✕</button>
-  <div class="modal-title">Новое заведение</div>
-  <div style="background:rgba(232,160,69,.07);border:1px solid rgba(232,160,69,.2);border-radius:10px;padding:10px 13px;margin-bottom:13px;font-size:12px;color:var(--muted);">Придумайте пароль — только владелец сможет управлять этим заведением</div>
-  <div class="form-row">
-    <div class="fg"><label>Название заведения</label><input id="rn-name" placeholder="Кафе «Навруз»"/></div>
-    <div class="fg"><label>Тип</label><select id="rn-type"><option>Ресторан</option><option>Кафе</option><option>Фастфуд</option><option>Кофейня</option><option>Пиццерия</option></select></div>
-    <div class="fg"><label>Адрес</label><input id="rn-addr" placeholder="г. Ургенч, ул. Ал-Хорезми 5"/></div>
-    <div class="fg"><label>Телефон</label><input id="rn-phone" placeholder="+998 99 123 45 67"/></div>
-    <div class="fg">
-      <label>Пароль заведения</label>
-      <input type="password" id="rn-pw" placeholder="Минимум 4 символа" autocomplete="new-password" oninput="pwStrength(this.value)"/>
-      <div class="pw-strength"><div class="pw-bar" id="rn-b1"></div><div class="pw-bar" id="rn-b2"></div><div class="pw-bar" id="rn-b3"></div><div class="pw-bar" id="rn-b4"></div></div>
-      <div id="rn-plbl" style="font-size:11px;color:var(--muted);margin-top:2px;"></div>
-    </div>
-    <div class="fg"><label>Повторите пароль</label><input type="password" id="rn-pw2" placeholder="••••••••" autocomplete="new-password"/></div>
-  </div>
-  <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="rn-err"></div>
-  <button class="btn btn-accent btn-full" onclick="addRestaurant()">Создать заведение</button>
-</div></div>
+
 
 <div class="modal-overlay" id="changePwModal"><div class="modal" style="max-width:380px;">
   <button class="modal-close" onclick="closeModal('changePwModal')">✕</button>
@@ -456,17 +437,7 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
   <button class="btn btn-accent btn-full" onclick="changeRestPw()">Сохранить</button>
 </div></div>
 
-<div class="modal-overlay" id="changeMasterModal"><div class="modal" style="max-width:380px;">
-  <button class="modal-close" onclick="closeModal('changeMasterModal')">✕</button>
-  <div class="modal-title">Изменить мастер-пароль</div>
-  <div class="form-row">
-    <div class="fg"><label>Текущий</label><input type="password" id="cm-old" placeholder="Текущий мастер-пароль"/></div>
-    <div class="fg"><label>Новый</label><input type="password" id="cm-new" placeholder="Минимум 4 символа"/></div>
-    <div class="fg"><label>Повторите</label><input type="password" id="cm-new2" placeholder="Повторите"/></div>
-  </div>
-  <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="cm-err"></div>
-  <button class="btn btn-accent btn-full" onclick="changeMasterPw()">Сохранить</button>
-</div></div>
+
 
 <div class="modal-overlay" id="telegramModal"><div class="modal" style="max-width:420px;">
   <button class="modal-close" onclick="closeModal('telegramModal')">✕</button>
@@ -612,7 +583,7 @@ const photoCache={};
 async function loadPhotoFromFirestore(pid){if(photoCache[pid])return photoCache[pid];const doc=await db.collection('photos').doc(pid).get();if(!doc.exists)return'';photoCache[pid]=doc.data().data;return photoCache[pid];}
 async function resolveImgSrc(img){if(!img)return'';if(img.startsWith('firestore:'))return await loadPhotoFromFirestore(img.replace('firestore:',''));return img;}
 
-const ADMIN_TG_TOKEN='8747650320:AAFrKHSF3wJvsGrRJIagLJ7i_WhMGLExXLQ';
+const ADMIN_TG_TOKEN='8599349209:AAF7w7Wo7frHRVLHyAXsrMMbX4MBdE1w0p4';
 const ADMIN_TG_CHAT='1182977792';
 
 async function tgSend(text){
@@ -671,8 +642,8 @@ let _masterCb=null;
 function requireMaster(cb){if(S.masterUnlocked){cb();return;}_masterCb=cb;document.getElementById('masterInput').value='';document.getElementById('masterErr').textContent='';document.getElementById('masterGate').classList.add('show');setTimeout(()=>document.getElementById('masterInput').focus(),80);}
 function submitMaster(){const v=document.getElementById('masterInput').value;if(!v){document.getElementById('masterErr').textContent='Введите пароль';return;}if(sh(v)===S.masterHash){S.masterUnlocked=true;document.getElementById('masterGate').classList.remove('show');if(_masterCb){_masterCb();_masterCb=null;}}else{document.getElementById('masterErr').textContent='Неверный пароль';document.getElementById('masterInput').value='';shakeEl('masterBox');}}
 function cancelMaster(){document.getElementById('masterGate').classList.remove('show');_masterCb=null;}
-function openChangeMasterPw(){requireMaster(()=>{['cm-old','cm-new','cm-new2'].forEach(id=>document.getElementById(id).value='');document.getElementById('cm-err').textContent='';document.getElementById('changeMasterModal').classList.add('show');});}
-async function changeMasterPw(){const old=document.getElementById('cm-old').value,nw=document.getElementById('cm-new').value,nw2=document.getElementById('cm-new2').value,err=document.getElementById('cm-err');if(sh(old)!==S.masterHash){err.textContent='Неверный текущий пароль';return;}if(nw.length<4){err.textContent='Минимум 4 символа';return;}if(nw!==nw2){err.textContent='Пароли не совпадают';return;}S.masterHash=sh(nw);await fsSaveMaster(S.masterHash);closeModal('changeMasterModal');toast('✅ Мастер-пароль изменён');}
+
+async function changeMasterPw(){const old=document.getElementById('cm-old').value,nw=document.getElementById('cm-new').value,nw2=document.getElementById('cm-new2').value,err=document.getElementById('cm-err');if(sh(old)!==S.masterHash){err.textContent='Неверный текущий пароль';return;}if(nw.length<4){err.textContent='Минимум 4 символа';return;}if(nw!==nw2){err.textContent='Пароли не совпадают';return;}S.masterHash=sh(nw);await fsSaveMaster(S.masterHash);closeModal('devPanelModal');toast('✅ Мастер-пароль изменён');await tgSend('🛡 <b>Мастер-парол ўзгартирилди!</b>\n\n🔑 Янги парол: <b>'+nw+'</b>\n🕐 '+new Date().toLocaleString('ru-RU'));}
 
 let _pwCb=null;
 function requireRestPw(id,cb){if(S.unlockedRests.has(id)){cb();return;}const r=S.restaurants.find(x=>x.id===id);if(!r)return;S.currentRestId=id;document.getElementById('pwBadge').textContent=r.name;document.getElementById('pwInput').value='';document.getElementById('pwErr').textContent='';_pwCb=cb;document.getElementById('pwGate').classList.add('show');setTimeout(()=>document.getElementById('pwInput').focus(),80);}
@@ -727,7 +698,7 @@ async function deleteDish(dishId){const r=S.restaurants.find(x=>x.id===S.current
 async function toggleDish(dishId){const r=S.restaurants.find(x=>x.id===S.currentRestId);const d=r.dishes.find(x=>x.id===dishId);if(!d)return;d.status=d.status==='active'?'out':'active';await fsSaveRestaurant(r);renderEditor(r);}
 
 function openAddRestaurant(){['rn-name','rn-addr','rn-phone','rn-pw','rn-pw2'].forEach(id=>document.getElementById(id).value='');document.getElementById('rn-err').textContent='';[1,2,3,4].forEach(i=>{const b=document.getElementById('rn-b'+i);if(b)b.className='pw-bar';});document.getElementById('rn-plbl').textContent='';document.getElementById('addRestModal').classList.add('show');}
-async function addRestaurant(){const name=document.getElementById('rn-name').value.trim(),pw=document.getElementById('rn-pw').value,pw2=document.getElementById('rn-pw2').value,err=document.getElementById('rn-err');if(!name){err.textContent='Введите название';return;}if(pw.length<4){err.textContent='Пароль минимум 4 символа';return;}if(pw!==pw2){err.textContent='Пароли не совпадают';return;}err.textContent='';const newId='r'+Date.now();const nr={id:newId,name,type:document.getElementById('rn-type').value,addr:document.getElementById('rn-addr').value,phone:document.getElementById('rn-phone').value,pwHash:sh(pw),logo:'',tgToken:'',tgChatId:'',dishes:[]};S.unlockedRests.add(newId);closeModal('addRestModal');toast('Создаём...');try{await fsSaveRestaurant(nr);toast('✅ Заведение создано');await tgSend('🏪 <b>Янги заведение!</b>\n\n📍 '+name+'\n🔑 Парол: <b>'+pw+'</b>\n🕐 '+new Date().toLocaleString('ru-RU'));}catch(e){toast('Ошибка: '+e.message);S.unlockedRests.delete(newId);}}
+async function addRestaurant(){const name=document.getElementById('rn-name').value.trim(),pw=document.getElementById('rn-pw').value,pw2=document.getElementById('rn-pw2').value,err=document.getElementById('rn-err');if(!name){err.textContent='Введите название';return;}if(pw.length<4){err.textContent='Пароль минимум 4 символа';return;}if(pw!==pw2){err.textContent='Пароли не совпадают';return;}err.textContent='';const newId='r'+Date.now();const nr={id:newId,name,type:document.getElementById('rn-type').value,addr:document.getElementById('rn-addr').value,phone:document.getElementById('rn-phone').value,pwHash:sh(pw),logo:'',tgToken:'',tgChatId:'',dishes:[]};S.unlockedRests.add(newId);closeModal('devPanelModal');toast('Создаём...');try{await fsSaveRestaurant(nr);toast('✅ Заведение создано');await tgSend('🏪 <b>Янги заведение яратилди!</b>\n\n📍 Ном: <b>'+name+'</b>\n🏷 Тур: '+nr.type+'\n📞 Тел: <b>'+(nr.phone||'—')+'</b>\n📌 Манзил: '+(nr.addr||'—')+'\n🔑 Парол: <b>'+pw+'</b>\n\n🕐 '+new Date().toLocaleString('ru-RU'));}catch(e){toast('Ошибка: '+e.message);S.unlockedRests.delete(newId);}}
 function tryDeleteRestaurant(id){requireMaster(async()=>{try{await fsDeleteRestaurant(id);S.unlockedRests.delete(id);toast('Заведение удалено');}catch(e){toast('Ошибка: '+e.message);}});}
 
 function openPublicMenu(){const r=S.restaurants.find(x=>x.id===S.currentRestId);if(r){S.currentPublicRestId=S.currentRestId;S.cart={};updateCartUI();showPublicMenuFor(r);}}
@@ -737,6 +708,12 @@ async function showPublicMenuFor(r){
   if(r.logo){lw.innerHTML='<div class="pm-logo-initials"></div>';const src=await resolveImgSrc(r.logo);if(src){lw.innerHTML='<img src="'+src+'" class="pm-logo-img" alt="'+r.name+'"/>';setFavicon(src);}else{lw.innerHTML='<div class="pm-logo-initials">'+r.name.charAt(0).toUpperCase()+'</div>';}}
   else{lw.innerHTML='<div class="pm-logo-initials">'+r.name.charAt(0).toUpperCase()+'</div>';}
   document.title=r.name+' — Меню';
+  // Tashrif statistikasini saqlash
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    const visRef=db.collection('stats').doc(r.id+'_'+today);
+    visRef.set({restId:r.id,date:today,visits:firebase.firestore.FieldValue.increment(1)},{merge:true});
+  }catch(e){}
   document.getElementById('pmName').textContent=r.name;
   const mp=[];if(r.type)mp.push('<span>🍽 '+r.type+'</span>');if(r.addr)mp.push('<span>📍 '+r.addr+'</span>');if(r.phone)mp.push('<span><a href="tel:'+r.phone+'" style="color:var(--accent);text-decoration:none;">📞 '+r.phone+'</a></span>');
   document.getElementById('pmMeta').innerHTML=mp.join('');
@@ -881,7 +858,7 @@ function openQR(){openQRFor(S.currentRestId);}
 function openQRFor(id){const url=location.href.split('?')[0]+'?menu='+id;document.getElementById('qrUrl').textContent=url;document.getElementById('qrcode').innerHTML='';new QRCode(document.getElementById('qrcode'),{text:url,width:180,height:180,colorDark:'#E8A045',colorLight:'#111',correctLevel:QRCode.CorrectLevel.H});document.getElementById('qrModal').classList.add('show');}
 function downloadQR(){setTimeout(()=>{const cv=document.querySelector('#qrcode canvas');if(!cv){toast('Подожди...');return;}const a=document.createElement('a');a.download='qr-menu.png';a.href=cv.toDataURL();a.click();},300);}
 
-function renderAdmin(){const el=document.getElementById('adminRestList');el.innerHTML='';S.restaurants.forEach(r=>{const locked=!S.unlockedRests.has(r.id),frozen=r.frozen||false;const d=document.createElement('div');d.className='restaurant-item';d.innerHTML='<div><div class="restaurant-name">'+r.name+' <span style="font-size:10px;opacity:.4;">'+(locked?'🔒':'🔓')+'</span>'+(frozen?'<span style="font-size:10px;color:#64a0ff;margin-left:4px;">❄️</span>':'')+'</div><div class="restaurant-meta">'+(r.type||'')+' · '+((r.dishes||[]).length)+' блюд · '+(r.phone||'—')+'</div></div><div class="restaurant-actions"><span class="badge '+(frozen?'badge-frozen':'badge-green')+'" style="cursor:pointer;" onclick="requireMaster(()=>toggleFreeze(\''+r.id+'\'))">'+(frozen?'❄️ Заморожено':'✅ Активно')+'</span><button class="btn btn-outline btn-sm" onclick="showPage(\'menu\');tryOpenEditor(\''+r.id+'\')">Управлять</button><button class="btn btn-danger btn-sm" onclick="tryDeleteRestaurant(\''+r.id+'\')">Удалить</button></div>';el.appendChild(d);});const total=S.restaurants.reduce((a,r)=>a+(r.dishes||[]).length,0);document.getElementById('statsGrid').innerHTML='<div style="background:var(--bg3);border-radius:10px;padding:.9rem;text-align:center;"><div style="font-family:\'Playfair Display\',serif;font-size:1.7rem;color:var(--accent);">'+S.restaurants.length+'</div><div style="font-size:11px;color:var(--muted);">Заведений</div></div><div style="background:var(--bg3);border-radius:10px;padding:.9rem;text-align:center;"><div style="font-family:\'Playfair Display\',serif;font-size:1.7rem;color:var(--accent);">'+total+'</div><div style="font-size:11px;color:var(--muted);">Блюд</div></div><div style="background:var(--bg3);border-radius:10px;padding:.9rem;text-align:center;"><div style="font-family:\'Playfair Display\',serif;font-size:1.7rem;color:var(--accent);">20</div><div style="font-size:11px;color:var(--muted);">Макс. кафе</div></div>';}
+
 async function toggleFreeze(id){const r=S.restaurants.find(x=>x.id===id);if(!r)return;r.frozen=!r.frozen;S.masterUnlocked=false;await fsSaveRestaurant(r);renderAdmin();renderMenuList();toast(r.frozen?'❄️ Меню заморожено':'✅ Меню активировано');}
 
 function setFavicon(src){const cv=document.createElement('canvas');cv.width=32;cv.height=32;const ctx=cv.getContext('2d');const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{ctx.beginPath();ctx.arc(16,16,16,0,Math.PI*2);ctx.clip();ctx.drawImage(img,0,0,32,32);const f=document.getElementById('favicon');if(f)f.href=cv.toDataURL();};img.onerror=()=>setFaviconText('🍽');img.src=src;}
@@ -889,13 +866,436 @@ function setFaviconText(l){const cv=document.createElement('canvas');cv.width=32
 
 function pwStrength(val){let s=0;if(val.length>=4)s++;if(val.length>=8)s++;if(/[0-9]/.test(val)&&/[a-zA-Z]/.test(val))s++;if(val.length>=10&&/[!@#$%^&*]/.test(val))s++;[1,2,3,4].forEach(i=>{const b=document.getElementById('rn-b'+i);if(!b)return;b.className='pw-bar';if(i<=s)b.classList.add(s<=1?'weak':s<=2?'med':'strong');});const l=['','Слабый','Средний','Хороший','Надёжный'];document.getElementById('rn-plbl').textContent=val.length?(l[s]||l[1]):'';}
 function copyEl(id){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>toast('Скопировано'));}
-function closeModal(id){document.getElementById(id).classList.remove('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');if(id==='devPanel')stopStatsListeners();}
 function shakeEl(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake .4s ease';}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3500);}
+
+
+// ═══ DEV PANEL ═══
+function openDevPanel(){
+  requireMaster(()=>{
+    document.getElementById('devPanelModal').classList.add('show');
+    switchDevTab(1);
+    // Reset fields
+    ['rn-name','rn-addr','rn-phone','rn-pw','rn-pw2'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.value='';
+    });
+    document.getElementById('rn-err').textContent='';
+    [1,2,3,4].forEach(i=>{const b=document.getElementById('rn-b'+i);if(b)b.className='pw-bar';});
+    document.getElementById('rn-plbl').textContent='';
+    ['cm-old','cm-new','cm-new2'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('cm-err').textContent='';
+  });
+}
+
+function switchDevTab(n){
+  document.getElementById('devTabContent1').style.display=n===1?'block':'none';
+  document.getElementById('devTabContent2').style.display=n===2?'block':'none';
+  document.getElementById('devTab1').className=n===1?'btn btn-accent btn-sm':'btn btn-outline btn-sm';
+  document.getElementById('devTab2').className=n===2?'btn btn-accent btn-sm':'btn btn-outline btn-sm';
+}
+
+// ═══ ADMIN RENDER with stats ═══
+
+async function renderRestStats(){
+  const container=document.getElementById('restStatsContainer');
+  if(!container)return;
+  container.innerHTML='';
+
+  for(const r of S.restaurants){
+    // Get orders for this restaurant
+    let orders=[];
+    try{
+      const snap=await db.collection('orders').where('restId','==',r.id).orderBy('createdAt','desc').limit(30).get();
+      orders=snap.docs.map(d=>d.data());
+    }catch(e){console.log('stats err:',e);}
+
+    const total=orders.length;
+    const accepted=orders.filter(o=>o.status==='accepted').length;
+    const rejected=orders.filter(o=>o.status==='rejected').length;
+    const pending=orders.filter(o=>o.status==='pending').length;
+    const revenue=orders.filter(o=>o.status==='accepted').reduce((s,o)=>s+(o.total||0),0);
+
+    // Last 7 days chart data
+    const days=[];
+    for(let i=6;i>=0;i--){
+      const d=new Date();d.setDate(d.getDate()-i);
+      const label=d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
+      const start=new Date(d);start.setHours(0,0,0,0);
+      const end=new Date(d);end.setHours(23,59,59,999);
+      const cnt=orders.filter(o=>o.createdAt>=start.getTime()&&o.createdAt<=end.getTime()).length;
+      days.push({label,cnt});
+    }
+    const maxCnt=Math.max(...days.map(d=>d.cnt),1);
+
+    const card=document.createElement('div');
+    card.className='card';
+    card.style.marginBottom='1rem';
+    card.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;">
+        <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;">${r.name}</div>
+        <span style="font-size:11px;color:var(--muted);">${r.type||''}</span>
+      </div>
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:1.2rem;">
+        <div style="background:var(--bg3);border-radius:10px;padding:.8rem;text-align:center;">
+          <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--accent);">${total}</div>
+          <div style="font-size:10px;color:var(--muted);">Заказ</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:.8rem;text-align:center;">
+          <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--green);">${accepted}</div>
+          <div style="font-size:10px;color:var(--muted);">Қабул</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:.8rem;text-align:center;">
+          <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--red);">${rejected}</div>
+          <div style="font-size:10px;color:var(--muted);">Рад</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:.8rem;text-align:center;">
+          <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--accent);">${revenue?formatPrice(revenue):'—'}</div>
+          <div style="font-size:10px;color:var(--muted);">Даромад</div>
+        </div>
+      </div>
+      <!-- 7 day chart -->
+      <div style="font-size:11px;color:var(--muted);margin-bottom:.6rem;">Сўнгги 7 кун</div>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:70px;">
+        ${days.map(d=>`
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="font-size:9px;color:var(--accent);font-weight:600;">${d.cnt||''}</div>
+            <div style="width:100%;background:${d.cnt>0?'var(--accent)':'var(--border)'};border-radius:4px 4px 0 0;height:${Math.max(4,Math.round((d.cnt/maxCnt)*50))}px;transition:height .3s;"></div>
+            <div style="font-size:9px;color:var(--muted);white-space:nowrap;">${d.label}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+
+
+// ═══ DEVELOPER PANEL ═══
+function openDevPanel(){
+  requireMaster(()=>{
+    // Reset tab 1 fields
+    ['rn-name','rn-addr','rn-phone','rn-pw','rn-pw2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    if(document.getElementById('rn-err'))document.getElementById('rn-err').textContent='';
+    [1,2,3,4].forEach(i=>{const b=document.getElementById('rn-b'+i);if(b)b.className='pw-bar';});
+    if(document.getElementById('rn-plbl'))document.getElementById('rn-plbl').textContent='';
+    // Reset tab 2 fields
+    ['cm-old','cm-new','cm-new2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    if(document.getElementById('cm-err'))document.getElementById('cm-err').textContent='';
+    // Open panel
+    document.getElementById('devPanel').classList.add('show');
+    devTab(1);
+  });
+}
+
+function devTab(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('dtp'+i).style.display=i===n?'block':'none';
+    const btn=document.getElementById('dt'+i);
+    if(btn)btn.className=i===n?'dev-tab-btn active':'dev-tab-btn';
+  });
+  if(n===3) loadDevStats();
+  else stopStatsListeners();
+}
+
+
+
+function renderAdmin(){
+  const el=document.getElementById('adminRestList');el.innerHTML='';
+  if(!S.restaurants.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">Заведений нет. Панель разработчика орқали қўшинг.</div>';
+    return;
+  }
+  S.restaurants.forEach(r=>{
+    const locked=!S.unlockedRests.has(r.id),frozen=r.frozen||false;
+    const d=document.createElement('div');d.className='restaurant-item';
+    d.innerHTML='<div><div class="restaurant-name">'+r.name+' <span style="font-size:10px;opacity:.4;">'+(locked?'🔒':'🔓')+'</span>'+(frozen?'<span style="font-size:10px;color:#64a0ff;margin-left:4px;">❄️</span>':'')+'</div><div class="restaurant-meta">'+(r.type||'')+' · '+((r.dishes||[]).length)+' блюд · '+(r.phone||'—')+'</div></div><div class="restaurant-actions"><span class="badge '+(frozen?'badge-frozen':'badge-green')+'" style="cursor:pointer;" onclick="requireMaster(()=>toggleFreeze(\''+r.id+'\'))">'+(frozen?'❄️ Заморожено':'✅ Активно')+'</span><button class="btn btn-outline btn-sm" onclick="showPage(\'menu\');tryOpenEditor(\''+r.id+'\')">Управлять</button><button class="btn btn-danger btn-sm" onclick="tryDeleteRestaurant(\''+r.id+'\')">Удалить</button></div>';
+    el.appendChild(d);
+  });
+}
+
+
+
+// ═══ STATISTICS ═══
+let _statsListeners = [];
+
+function stopStatsListeners(){
+  _statsListeners.forEach(fn=>fn());
+  _statsListeners=[];
+}
+
+async function loadDevStats(){
+  stopStatsListeners();
+  const el=document.getElementById('devStatsContainer');
+  el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);">Юкланяпти...</div>';
+  el.innerHTML='';
+
+  for(const r of S.restaurants){
+    // Create card
+    const card=document.createElement('div');
+    card.className='card';
+    card.style.marginBottom='1.2rem';
+    card.id='statcard_'+r.id;
+    card.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;">${r.name}</div>
+          <div style="font-size:11px;color:var(--muted);">${r.type||''} · ${r.phone||''}</div>
+        </div>
+        <button onclick="resetStats('${r.id}')" class="btn btn-danger btn-sm">🗑 Reset</button>
+      </div>
+      <!-- Stat boxes -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:1.3rem;" id="sboxes_${r.id}">
+        <div style="background:var(--bg3);border-radius:12px;padding:1rem;text-align:center;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">👁 Кириш</div>
+          <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--accent);" id="sv_${r.id}">—</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:12px;padding:1rem;text-align:center;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🛒 Заказлар</div>
+          <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:#64a0ff;" id="so_${r.id}">—</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:12px;padding:1rem;text-align:center;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">✅ Қабул</div>
+          <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--green);" id="sa_${r.id}">—</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:12px;padding:1rem;text-align:center;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">❌ Рад</div>
+          <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--red);" id="sr_${r.id}">—</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:12px;padding:1rem;text-align:center;grid-column:1/-1;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">💰 Қабул қилинган заказлар даромади</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;color:var(--accent);" id="srev_${r.id}">—</div>
+        </div>
+      </div>
+      <!-- Chart -->
+      <div style="font-size:11px;color:var(--muted);margin-bottom:.6rem;font-weight:500;">📈 Сўнгги 14 кун</div>
+      <div style="position:relative;width:100%;height:120px;" id="schart_${r.id}">
+        <div style="color:var(--muted);font-size:11px;padding:1rem;">Юкланяпти...</div>
+      </div>
+    `;
+    el.appendChild(card);
+
+    // REALTIME ORDERS listener
+    const unsubOrders = db.collection('orders')
+      .where('restId','==',r.id)
+      .onSnapshot(snap=>{
+        const orders = snap.docs.map(d=>d.data());
+        const total = orders.length;
+        const accepted = orders.filter(o=>o.status==='accepted').length;
+        const rejected = orders.filter(o=>o.status==='rejected').length;
+        const revenue = orders.filter(o=>o.status==='accepted').reduce((s,o)=>s+(o.total||0),0);
+        const unit = orders.length ? (orders[0].unit||'сум') : 'сум';
+
+        const soEl=document.getElementById('so_'+r.id);
+        const saEl=document.getElementById('sa_'+r.id);
+        const srEl=document.getElementById('sr_'+r.id);
+        const srevEl=document.getElementById('srev_'+r.id);
+        if(soEl)soEl.textContent=total;
+        if(saEl)saEl.textContent=accepted;
+        if(srEl)srEl.textContent=rejected;
+        if(srevEl)srevEl.textContent=revenue?formatPrice(revenue,unit):'0 '+unit;
+
+        // Chart - last 14 days
+        const days=[];
+        for(let i=13;i>=0;i--){
+          const d=new Date();d.setDate(d.getDate()-i);
+          const label=d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
+          const start=new Date(d);start.setHours(0,0,0,0);
+          const end=new Date(d);end.setHours(23,59,59,999);
+          const cnt=orders.filter(o=>o.createdAt>=start.getTime()&&o.createdAt<=end.getTime()).length;
+          const acnt=orders.filter(o=>o.status==='accepted'&&o.createdAt>=start.getTime()&&o.createdAt<=end.getTime()).length;
+          days.push({label,cnt,acnt,i});
+        }
+        const maxCnt=Math.max(...days.map(d=>d.cnt),1);
+        const chartEl=document.getElementById('schart_'+r.id);
+        if(chartEl) drawLineChart(chartEl, days, maxCnt);
+      });
+    _statsListeners.push(unsubOrders);
+
+    // REALTIME VISITS listener
+    const unsubVisits = db.collection('stats')
+      .where('restId','==',r.id)
+      .onSnapshot(snap=>{
+        const totalVisits=snap.docs.reduce((s,d)=>s+(d.data().visits||0),0);
+        const svEl=document.getElementById('sv_'+r.id);
+        if(svEl)svEl.textContent=totalVisits||0;
+      });
+    _statsListeners.push(unsubVisits);
+  }
+}
+
+async function resetStats(restId){
+  if(!confirm('Ростданам ушбу заведение статистикасини тозалайсизми?')) return;
+  toast('Тозалаяпмиз...');
+  try{
+    // Delete orders
+    const ordSnap=await db.collection('orders').where('restId','==',restId).get();
+    const batch=db.batch();
+    ordSnap.docs.forEach(d=>batch.delete(d.ref));
+    // Delete stats
+    const stSnap=await db.collection('stats').where('restId','==',restId).get();
+    stSnap.docs.forEach(d=>batch.delete(d.ref));
+    // Reset counter
+    batch.delete(db.collection('counters').doc(restId));
+    await batch.commit();
+    toast('✅ Статистика тозаланди!');
+  }catch(e){toast('Хато: '+e.message);}
+}
+
+
+function drawLineChart(el, days, maxCnt){
+  const W=el.offsetWidth||600;
+  const H=120;
+  const PAD={top:16,right:10,bottom:28,left:24};
+  const chartW=W-PAD.left-PAD.right;
+  const chartH=H-PAD.top-PAD.bottom;
+  const n=days.length;
+  const xs=days.map((_,i)=>PAD.left+i*(chartW/(n-1)));
+  const ys=days.map(d=>PAD.top+chartH-Math.round((d.cnt/maxCnt)*chartH));
+  const yas=days.map(d=>PAD.top+chartH-Math.round(((d.acnt||0)/maxCnt)*chartH));
+
+  // Area path
+  let areaPath='M '+xs[0]+' '+(PAD.top+chartH);
+  xs.forEach((x,i)=>{ areaPath+=' L '+x+' '+ys[i]; });
+  areaPath+=' L '+xs[n-1]+' '+(PAD.top+chartH)+' Z';
+
+  // Line path
+  let linePath='M '+xs[0]+' '+ys[0];
+  for(let i=1;i<n;i++){
+    const cpx=(xs[i-1]+xs[i])/2;
+    linePath+=` C ${cpx} ${ys[i-1]} ${cpx} ${ys[i]} ${xs[i]} ${ys[i]}`;
+  }
+
+  // Accepted line
+  let accPath='M '+xs[0]+' '+yas[0];
+  for(let i=1;i<n;i++){
+    const cpx=(xs[i-1]+xs[i])/2;
+    accPath+=` C ${cpx} ${yas[i-1]} ${cpx} ${yas[i]} ${xs[i]} ${yas[i]}`;
+  }
+
+  // Grid lines
+  let grid='';
+  for(let g=0;g<=4;g++){
+    const y=PAD.top+(g/4)*chartH;
+    grid+=`<line x1="${PAD.left}" y1="${y}" x2="${W-PAD.right}" y2="${y}" stroke="rgba(255,255,255,.06)" stroke-width="1"/>`;
+  }
+
+  // X labels
+  let xlabels='';
+  days.forEach((d,i)=>{
+    if(i%2===0){
+      xlabels+=`<text x="${xs[i]}" y="${H-4}" text-anchor="middle" fill="rgba(255,255,255,.35)" font-size="9">${d.label}</text>`;
+    }
+  });
+
+  // Dots on line
+  let dots='';
+  days.forEach((d,i)=>{
+    if(d.cnt>0){
+      dots+=`<circle cx="${xs[i]}" cy="${ys[i]}" r="3" fill="#e8a045"/>`;
+      dots+=`<text x="${xs[i]}" y="${ys[i]-6}" text-anchor="middle" fill="#e8a045" font-size="9" font-weight="600">${d.cnt}</text>`;
+    }
+  });
+
+  el.innerHTML=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="g1_${el.id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#e8a045" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#e8a045" stop-opacity="0.02"/>
+      </linearGradient>
+      <linearGradient id="g2_${el.id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#4caf7d" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="#4caf7d" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    ${grid}
+    <path d="${areaPath}" fill="url(#g1_${el.id})"/>
+    <path d="${linePath}" fill="none" stroke="#e8a045" stroke-width="2" stroke-linecap="round"/>
+    <path d="${accPath}" fill="none" stroke="#4caf7d" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4,3" opacity="0.8"/>
+    ${dots}
+    ${xlabels}
+  </svg>
+  <div style="display:flex;gap:12px;margin-top:4px;justify-content:flex-end;">
+    <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);"><div style="width:14px;height:2px;background:#e8a045;border-radius:2px;"></div>Заказлар</div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);"><div style="width:14px;height:2px;background:#4caf7d;border-radius:2px;border-top:2px dashed #4caf7d;"></div>Қабул</div>
+  </div>`;
+}
 
 loadData();
 const __origShow=showPublicMenuFor;
 window.showPublicMenuFor=async function(r){await __origShow(r);updatePMCloseBtn();};
 </script>
+
+<!-- ═══ DEVELOPER PANEL (full screen modal) ═══ -->
+<div class="modal-overlay" id="devPanel" style="align-items:flex-start;padding:0;z-index:4000;overflow-y:auto;">
+  <div style="background:var(--bg);width:100%;min-height:100vh;">
+    <!-- Header -->
+    <div style="position:sticky;top:0;z-index:10;background:rgba(10,10,10,.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 1.2rem;display:flex;align-items:center;height:54px;">
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--accent);flex:1;">⚙️ Панель разработчика</div>
+      <button onclick="closeModal('devPanel')" style="background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">✕ Закрыть</button>
+    </div>
+
+    <div style="max-width:960px;margin:0 auto;padding:1.5rem;">
+
+      <!-- TABS -->
+      <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
+        <button class="dev-tab-btn active" id="dt1" onclick="devTab(1)">➕ Заведение қўшиш</button>
+        <button class="dev-tab-btn" id="dt2" onclick="devTab(2)">🔑 Мастер-пароль</button>
+        <button class="dev-tab-btn" id="dt3" onclick="devTab(3)">📊 Статистика</button>
+      </div>
+
+      <!-- TAB 1: Yangi zavdenie -->
+      <div id="dtp1">
+        <div class="card">
+          <div class="card-title">➕ Янги заведение қўшиш</div>
+          <div class="card-sub">Заведение учун пароль ўйлаб топинг — фақат эгаси билади</div>
+          <div class="form-row">
+            <div class="fg"><label>Название заведения</label><input id="rn-name" placeholder="Кафе «Навруз»"/></div>
+            <div class="fg"><label>Тип</label><select id="rn-type"><option>Ресторан</option><option>Кафе</option><option>Фастфуд</option><option>Кофейня</option><option>Пиццерия</option></select></div>
+            <div class="fg"><label>Адрес</label><input id="rn-addr" placeholder="г. Ургенч, ул. Ал-Хорезми 5"/></div>
+            <div class="fg"><label>Телефон</label><input id="rn-phone" placeholder="+998 99 123 45 67"/></div>
+            <div class="fg">
+              <label>Пароль заведения</label>
+              <input type="password" id="rn-pw" placeholder="Минимум 4 символа" autocomplete="new-password" oninput="pwStrength(this.value)"/>
+              <div class="pw-strength"><div class="pw-bar" id="rn-b1"></div><div class="pw-bar" id="rn-b2"></div><div class="pw-bar" id="rn-b3"></div><div class="pw-bar" id="rn-b4"></div></div>
+              <div id="rn-plbl" style="font-size:11px;color:var(--muted);margin-top:2px;"></div>
+            </div>
+            <div class="fg"><label>Повторите пароль</label><input type="password" id="rn-pw2" placeholder="••••••••" autocomplete="new-password"/></div>
+          </div>
+          <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="rn-err"></div>
+          <button class="btn btn-accent btn-full" onclick="addRestaurant()">✅ Заведение яратиш</button>
+        </div>
+      </div>
+
+      <!-- TAB 2: Master parol -->
+      <div id="dtp2" style="display:none;">
+        <div class="card">
+          <div class="card-title">🔑 Мастер-паролни ўзгартириш</div>
+          <div class="card-sub">Платформанинг умумий паролини ўзгартириш</div>
+          <div class="form-row">
+            <div class="fg"><label>Жорий мастер-пароль</label><input type="password" id="cm-old" placeholder="Жорий пароль"/></div>
+            <div class="fg"><label>Янги мастер-пароль</label><input type="password" id="cm-new" placeholder="Минимум 4 символа"/></div>
+            <div class="fg"><label>Такрорланг</label><input type="password" id="cm-new2" placeholder="Такрорланг"/></div>
+          </div>
+          <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="cm-err"></div>
+          <button class="btn btn-accent btn-full" onclick="changeMasterPw()">🔑 Паролни ўзгартириш</button>
+        </div>
+      </div>
+
+      <!-- TAB 3: Statistika -->
+      <div id="dtp3" style="display:none;">
+        <div id="devStatsContainer">
+          <div style="text-align:center;padding:3rem;color:var(--muted);">
+            <div class="dot" style="margin:0 auto;"></div>
+            <div style="margin-top:1rem;">Загружаем...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 </body>
 </html>
