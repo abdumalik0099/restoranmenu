@@ -626,14 +626,11 @@ async function tgSend(text){
 async function tgSendOrder(text,orderId,phone,token,chatId){
   const tok=token||ADMIN_TG_TOKEN;
   const cht=String(chatId||ADMIN_TG_CHAT);
-  const digits=phone.replace(/[^\d]/g,''); // 998904431014
-  const telUrl='tel:00'+digits.replace(/^998/,'998'); // tel:00998904431014
-  // Агар рақам 998 билан бошланса → tel:00998..., бошқача → tel:00...
-  const finalTel = digits.startsWith('998') ? 'tel:00'+digits : 'tel:00'+digits;
+  // tel:%2B998904431014 — + ni %2B qilib encode qilamiz
+  const finalTel = 'tel:%2B' + phone.replace(/[^\d]/g,'');
   const keyboard={inline_keyboard:[[
     {text:'✅ Қабул қилиш',callback_data:'accept_'+phone+'_'+orderId},
-    {text:'❌ Рад этиш',   callback_data:'reject_'+phone+'_'+orderId},
-    {text:'📞 Тел қилиш', url:finalTel}
+    {text:'❌ Рад этиш',   callback_data:'reject_'+phone+'_'+orderId}
   ]]};
   try{
     const resp=await fetch('https://api.telegram.org/bot'+tok+'/sendMessage',{
