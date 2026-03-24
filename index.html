@@ -404,7 +404,7 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
       <div class="phone-step-sub">Оператор сиз билан боғланади</div>
       <div class="phone-input-wrap" style="margin-bottom:10px;">
         <span class="phone-prefix">📞</span>
-        <input type="tel" id="phoneInput" placeholder="+998 90 000 00 00" style="font-size:15px;" onkeydown="if(event.key==='Enter')sendOrder()"/>
+        <input type="tel" id="phoneInput" placeholder="+998 90 000 00 00" style="font-size:15px;" onkeydown="if(event.key==='Enter')sendOrder()" oninput="formatPhoneInput(this)" onfocus="if(!this.value)this.value='+998 '"/>
       </div>
       <div style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;" id="phoneErr"></div>
       <button class="btn btn-accent btn-full" id="sendOrderBtn" onclick="sendOrder()">✅ Буюртмани юбориш</button>
@@ -629,7 +629,7 @@ function loadData(){
     S.restaurants=snap.docs.map(d=>({...d.data(),id:d.id}));
     if(firstLoad){
       firstLoad=false;
-      if(!S.restaurants.length){seedDemo();return;}
+      if(!S.restaurants.length){setLoader(false);refreshUI();return;}
       setLoader(false);
       const urlId=new URLSearchParams(location.search).get('menu');
       if(urlId){const r=S.restaurants.find(x=>x.id===urlId);if(r){S.currentRestId=urlId;S.currentPublicRestId=urlId;S.isPublicView=true;showPublicMenuFor(r);return;}}
@@ -639,7 +639,7 @@ function loadData(){
 }
 function setLoader(show,msg){const el=document.getElementById('appLoader');if(msg)document.getElementById('loaderMsg').textContent=msg;if(show){el.classList.remove('hide');el.style.display='flex';}else{el.classList.add('hide');setTimeout(()=>el.style.display='none',400);}}
 function refreshUI(){const a=document.querySelector('.page.active');if(a&&a.id==='page-menu'){if(document.getElementById('menuEditor').classList.contains('active')&&S.currentRestId){const r=S.restaurants.find(x=>x.id===S.currentRestId);if(r)renderEditor(r);}else renderMenuList();}if(a&&a.id==='page-admin')renderAdmin();const pm=document.getElementById('publicMenu');if(pm.classList.contains('show')&&S.currentPublicRestId){const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);if(r)showPublicMenuFor(r);}}
-async function seedDemo(){setLoader(true,'Создаём демо...');const demo=[{id:'demo1',name:'Кафе «Наврӯз»',type:'Кафе',addr:'г. Ургенч, ул. Ал-Хорезми 5',phone:'+998 91 234 56 78',pwHash:sh('1234'),logo:'',tgToken:'',tgChatId:'',dishes:[{id:'dd1',name:'Плов по-фергански',price:'45000',priceUnit:'сум',cat:'Основные блюда',desc:'Ароматный плов с говядиной',img:'',status:'active'},{id:'dd2',name:'Шашлык',price:'60000',priceUnit:'сум',cat:'Гриль',desc:'Сочный шашлык на углях',img:'',status:'active'}]},{id:'demo2',name:'Ресторан «Шарк»',type:'Ресторан',addr:'пр. Ислама Каримова 12',phone:'+998 93 456 78 90',pwHash:sh('5678'),logo:'',tgToken:'',tgChatId:'',dishes:[{id:'dd4',name:'Шурпа',price:'40000',priceUnit:'сум',cat:'Супы',desc:'Наваристый суп из баранины',img:'',status:'active'}]}];for(const r of demo)await fsSaveRestaurant(r);}
+
 
 function showPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+n).classList.add('active');const idx={landing:0,menu:1,admin:2};if(idx[n]!==undefined)document.querySelectorAll('.nav-tab')[idx[n]].classList.add('active');if(n==='menu')renderMenuList();if(n==='admin')renderAdmin();}
 
@@ -648,7 +648,7 @@ function requireMaster(cb){if(S.masterUnlocked){cb();return;}_masterCb=cb;docume
 function submitMaster(){const v=document.getElementById('masterInput').value;if(!v){document.getElementById('masterErr').textContent='Введите пароль';return;}if(sh(v)===S.masterHash){S.masterUnlocked=true;document.getElementById('masterGate').classList.remove('show');if(_masterCb){_masterCb();_masterCb=null;}}else{document.getElementById('masterErr').textContent='Неверный пароль';document.getElementById('masterInput').value='';shakeEl('masterBox');}}
 function cancelMaster(){document.getElementById('masterGate').classList.remove('show');_masterCb=null;}
 
-async function changeMasterPw(){const old=document.getElementById('cm-old').value,nw=document.getElementById('cm-new').value,nw2=document.getElementById('cm-new2').value,err=document.getElementById('cm-err');if(sh(old)!==S.masterHash){err.textContent='Неверный текущий пароль';return;}if(nw.length<4){err.textContent='Минимум 4 символа';return;}if(nw!==nw2){err.textContent='Пароли не совпадают';return;}S.masterHash=sh(nw);await fsSaveMaster(S.masterHash);closeModal('devPanelModal');toast('✅ Мастер-пароль изменён');await tgSend('🛡 <b>Мастер-парол ўзгартирилди!</b>\n\n🔑 Янги парол: <b>'+nw+'</b>\n🕐 '+new Date().toLocaleString('ru-RU'));}
+async function changeMasterPw(){const old=document.getElementById('cm-old').value,nw=document.getElementById('cm-new').value,nw2=document.getElementById('cm-new2').value,err=document.getElementById('cm-err');if(sh(old)!==S.masterHash){err.textContent='Неверный текущий пароль';return;}if(nw.length<4){err.textContent='Минимум 4 символа';return;}if(nw!==nw2){err.textContent='Пароли не совпадают';return;}S.masterHash=sh(nw);await fsSaveMaster(S.masterHash);closeModal('devPanel');toast('✅ Мастер-пароль изменён');await tgSend('🛡 <b>Мастер-парол ўзгартирилди!</b>\n\n🔑 Янги парол: <b>'+nw+'</b>\n🕐 '+new Date().toLocaleString('ru-RU'));}
 
 let _pwCb=null;
 function requireRestPw(id,cb){if(S.unlockedRests.has(id)){cb();return;}const r=S.restaurants.find(x=>x.id===id);if(!r)return;S.currentRestId=id;document.getElementById('pwBadge').textContent=r.name;document.getElementById('pwInput').value='';document.getElementById('pwErr').textContent='';_pwCb=cb;document.getElementById('pwGate').classList.add('show');setTimeout(()=>document.getElementById('pwInput').focus(),80);}
@@ -703,7 +703,7 @@ async function deleteDish(dishId){const r=S.restaurants.find(x=>x.id===S.current
 async function toggleDish(dishId){const r=S.restaurants.find(x=>x.id===S.currentRestId);const d=r.dishes.find(x=>x.id===dishId);if(!d)return;d.status=d.status==='active'?'out':'active';await fsSaveRestaurant(r);renderEditor(r);}
 
 function openAddRestaurant(){['rn-name','rn-addr','rn-phone','rn-pw','rn-pw2'].forEach(id=>document.getElementById(id).value='');document.getElementById('rn-err').textContent='';[1,2,3,4].forEach(i=>{const b=document.getElementById('rn-b'+i);if(b)b.className='pw-bar';});document.getElementById('rn-plbl').textContent='';document.getElementById('addRestModal').classList.add('show');}
-async function addRestaurant(){const name=document.getElementById('rn-name').value.trim(),pw=document.getElementById('rn-pw').value,pw2=document.getElementById('rn-pw2').value,err=document.getElementById('rn-err');if(!name){err.textContent='Введите название';return;}if(pw.length<4){err.textContent='Пароль минимум 4 символа';return;}if(pw!==pw2){err.textContent='Пароли не совпадают';return;}err.textContent='';const newId='r'+Date.now();const nr={id:newId,name,type:document.getElementById('rn-type').value,addr:document.getElementById('rn-addr').value,phone:document.getElementById('rn-phone').value,pwHash:sh(pw),logo:'',tgToken:'',tgChatId:'',dishes:[]};S.unlockedRests.add(newId);closeModal('devPanelModal');toast('Создаём...');try{await fsSaveRestaurant(nr);toast('✅ Заведение создано');await tgSend('🏪 <b>Янги заведение яратилди!</b>\n\n📍 Ном: <b>'+name+'</b>\n🏷 Тур: '+nr.type+'\n📞 Тел: <b>'+(nr.phone||'—')+'</b>\n📌 Манзил: '+(nr.addr||'—')+'\n🔑 Парол: <b>'+pw+'</b>\n\n🕐 '+new Date().toLocaleString('ru-RU'));}catch(e){toast('Ошибка: '+e.message);S.unlockedRests.delete(newId);}}
+async function addRestaurant(){const name=document.getElementById('rn-name').value.trim(),pw=document.getElementById('rn-pw').value,pw2=document.getElementById('rn-pw2').value,err=document.getElementById('rn-err');if(!name){err.textContent='Введите название';return;}if(pw.length<4){err.textContent='Пароль минимум 4 символа';return;}if(pw!==pw2){err.textContent='Пароли не совпадают';return;}err.textContent='';const newId='r'+Date.now();const nr={id:newId,name,type:document.getElementById('rn-type').value,addr:document.getElementById('rn-addr').value,phone:document.getElementById('rn-phone').value,pwHash:sh(pw),logo:'',tgToken:'',tgChatId:'',dishes:[]};S.unlockedRests.add(newId);closeModal('devPanel');toast('Создаём...');try{await fsSaveRestaurant(nr);toast('✅ Заведение создано');await tgSend('🏪 <b>Янги заведение яратилди!</b>\n\n📍 Ном: <b>'+name+'</b>\n🏷 Тур: '+nr.type+'\n📞 Тел: <b>'+(nr.phone||'—')+'</b>\n📌 Манзил: '+(nr.addr||'—')+'\n🔑 Парол: <b>'+pw+'</b>\n\n🕐 '+new Date().toLocaleString('ru-RU'));}catch(e){toast('Ошибка: '+e.message);S.unlockedRests.delete(newId);}}
 function tryDeleteRestaurant(id){requireMaster(async()=>{try{await fsDeleteRestaurant(id);S.unlockedRests.delete(id);toast('Заведение удалено');}catch(e){toast('Ошибка: '+e.message);}});}
 
 function openPublicMenu(){const r=S.restaurants.find(x=>x.id===S.currentRestId);if(r){S.currentPublicRestId=S.currentRestId;S.cart={};updateCartUI();showPublicMenuFor(r);}}
@@ -713,11 +713,15 @@ async function showPublicMenuFor(r){
   if(r.logo){lw.innerHTML='<div class="pm-logo-initials"></div>';const src=await resolveImgSrc(r.logo);if(src){lw.innerHTML='<img src="'+src+'" class="pm-logo-img" alt="'+r.name+'"/>';setFavicon(src);}else{lw.innerHTML='<div class="pm-logo-initials">'+r.name.charAt(0).toUpperCase()+'</div>';}}
   else{lw.innerHTML='<div class="pm-logo-initials">'+r.name.charAt(0).toUpperCase()+'</div>';}
   document.title=r.name+' — Меню';
-  // Tashrif statistikasini saqlash
+  // Tashrif - bir session ichida bir marta hisoblansin
   try{
-    const today=new Date().toISOString().slice(0,10);
-    const visRef=db.collection('stats').doc(r.id+'_'+today);
-    visRef.set({restId:r.id,date:today,visits:firebase.firestore.FieldValue.increment(1)},{merge:true});
+    const visitKey='visited_'+r.id;
+    if(!sessionStorage.getItem(visitKey)){
+      sessionStorage.setItem(visitKey,'1');
+      const today=new Date().toISOString().slice(0,10);
+      const visRef=db.collection('stats').doc(r.id+'_'+today);
+      visRef.set({restId:r.id,date:today,visits:firebase.firestore.FieldValue.increment(1)},{merge:true});
+    }
   }catch(e){}
   document.getElementById('pmName').textContent=r.name;
   const mp=[];if(r.type)mp.push('<span>🍽 '+r.type+'</span>');if(r.addr)mp.push('<span>📍 '+r.addr+'</span>');if(r.phone)mp.push('<span><a href="tel:'+r.phone+'" style="color:var(--accent);text-decoration:none;">📞 '+r.phone+'</a></span>');
@@ -775,7 +779,9 @@ function backToCart(){document.getElementById('phoneStep').classList.remove('sho
 
 async function sendOrder(){
   const phone=document.getElementById('phoneInput').value.trim();
-  if(!phone||phone.length<7){document.getElementById('phoneErr').textContent='Введите правильный номер телефона (+998 90 ...)';return;}
+  const phoneDigits=phone.replace(/\D/g,'');
+  if(!phone.startsWith('+998')){document.getElementById('phoneErr').textContent='❌ Рақам +998 билан бошланиши керак';return;}
+  if(phoneDigits.length!==12){document.getElementById('phoneErr').textContent='❌ Тўлиқ рақам киритинг: +998 90 000 00 00';return;}
   const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);
   if(!r){toast('Заведение не найдено');return;}
   const btn=document.getElementById('sendOrderBtn');
@@ -847,16 +853,16 @@ function expandOrderModal(){
   requestAnimationFrame(()=>requestAnimationFrame(()=>{box.style.transition='transform .5s cubic-bezier(.34,1.56,.64,1), opacity .35s ease';box.style.transform='translate(-50%,-50%) scale(1)';box.style.opacity='1';}));
 }
 function onOrderOverlayClick(e){if(e.target===document.getElementById('orderModalOverlay'))collapseOrderModal();}
-function updateOrderModal(status){
+function updateOrderModal(status,orderData){
   _curOrderStatus=status;
   if(status==='accepted'){document.getElementById('orderModalTitle').textContent='✅ Заказ қабул қилинди!';document.getElementById('orderModalSub').innerHTML='Официант яқинда сизга келади.<br/>Сизнинг заказингиз рақами:';_setMS('#4caf7d','linear-gradient(135deg,rgba(76,175,125,.2),rgba(76,175,125,.05))','rgba(76,175,125,.5)','#4caf7d','#4caf7d');const b=document.getElementById('orderBubble');if(b.classList.contains('show')){b.classList.add('accepted');document.getElementById('orderBubbleIcon').textContent='✅';}if(!_modalCollapsed)setTimeout(collapseOrderModal,5000);}
-  else if(status==='rejected'){document.getElementById('orderModalTitle').textContent='❌ Заказ рад этилди';document.getElementById('orderModalSub').innerHTML='Официантга мурожаат қилинг.<br/>Сизнинг заказингиз рақами:';_setMS('#e05555','linear-gradient(135deg,rgba(224,85,85,.2),rgba(224,85,85,.05))','rgba(224,85,85,.5)','#e05555','#e05555');const b=document.getElementById('orderBubble');if(b.classList.contains('show')){b.classList.add('rejected');document.getElementById('orderBubbleIcon').textContent='❌';}if(!_modalCollapsed)setTimeout(collapseOrderModal,5000);}
+  else if(status==='rejected'){const reason=orderData&&orderData.rejectReason?orderData.rejectReason:'';document.getElementById('orderModalTitle').textContent='❌ Заказ рад этилди';document.getElementById('orderModalSub').innerHTML=(reason?'📝 <b>Сабаб: '+reason+'</b><br/>':'')+'Официантга мурожаат қилинг.<br/>Сизнинг заказингиз рақами:';_setMS('#e05555','linear-gradient(135deg,rgba(224,85,85,.2),rgba(224,85,85,.05))','rgba(224,85,85,.5)','#e05555','#e05555');const b=document.getElementById('orderBubble');if(b.classList.contains('show')){b.classList.add('rejected');document.getElementById('orderBubbleIcon').textContent='❌';}if(!_modalCollapsed)setTimeout(collapseOrderModal,5000);}
 }
 let _orderListener=null;
 function listenOrderStatus(orderId){
   if(_orderListener)_orderListener();
   const timeout=setTimeout(()=>{if(_orderListener)_orderListener();document.getElementById('orderModalSub').innerHTML='Жавоб йўқ — официантга мурожаат қилинг.<br/>Сизнинг заказингиз рақами:';},5*60*1000);
-  _orderListener=db.collection('orders').doc(orderId).onSnapshot(snap=>{if(!snap.exists)return;const status=snap.data().status;if(status==='accepted'){clearTimeout(timeout);if(_orderListener){_orderListener();_orderListener=null;}updateOrderModal('accepted');}else if(status==='rejected'){clearTimeout(timeout);if(_orderListener){_orderListener();_orderListener=null;}updateOrderModal('rejected');}});
+  _orderListener=db.collection('orders').doc(orderId).onSnapshot(snap=>{if(!snap.exists)return;const data=snap.data();const status=data.status;if(status==='accepted'){clearTimeout(timeout);if(_orderListener){_orderListener();_orderListener=null;}updateOrderModal('accepted',data);}else if(status==='rejected'){clearTimeout(timeout);if(_orderListener){_orderListener();_orderListener=null;}updateOrderModal('rejected',data);}});
 }
 
 function openQR(){openQRFor(S.currentRestId);}
@@ -877,28 +883,9 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 
 
 // ═══ DEV PANEL ═══
-function openDevPanel(){
-  requireMaster(()=>{
-    document.getElementById('devPanelModal').classList.add('show');
-    switchDevTab(1);
-    // Reset fields
-    ['rn-name','rn-addr','rn-phone','rn-pw','rn-pw2'].forEach(id=>{
-      const el=document.getElementById(id);if(el)el.value='';
-    });
-    document.getElementById('rn-err').textContent='';
-    [1,2,3,4].forEach(i=>{const b=document.getElementById('rn-b'+i);if(b)b.className='pw-bar';});
-    document.getElementById('rn-plbl').textContent='';
-    ['cm-old','cm-new','cm-new2'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('cm-err').textContent='';
-  });
-}
 
-function switchDevTab(n){
-  document.getElementById('devTabContent1').style.display=n===1?'block':'none';
-  document.getElementById('devTabContent2').style.display=n===2?'block':'none';
-  document.getElementById('devTab1').className=n===1?'btn btn-accent btn-sm':'btn btn-outline btn-sm';
-  document.getElementById('devTab2').className=n===2?'btn btn-accent btn-sm':'btn btn-outline btn-sm';
-}
+
+
 
 // ═══ ADMIN RENDER with stats ═══
 
@@ -981,17 +968,17 @@ async function renderRestStats(){
 // ═══ DEVELOPER PANEL ═══
 function openDevPanel(){
   requireMaster(()=>{
-    // Reset tab 1 fields
-    ['rn-name','rn-addr','rn-phone','rn-pw','rn-pw2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-    if(document.getElementById('rn-err'))document.getElementById('rn-err').textContent='';
-    [1,2,3,4].forEach(i=>{const b=document.getElementById('rn-b'+i);if(b)b.className='pw-bar';});
-    if(document.getElementById('rn-plbl'))document.getElementById('rn-plbl').textContent='';
-    // Reset tab 2 fields
-    ['cm-old','cm-new','cm-new2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-    if(document.getElementById('cm-err'))document.getElementById('cm-err').textContent='';
-    // Open panel
     document.getElementById('devPanel').classList.add('show');
     devTab(1);
+    // Reset fields after panel opens
+    setTimeout(()=>{
+      ['rn-name','rn-addr','rn-phone','rn-pw','rn-pw2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+      const rnErr=document.getElementById('rn-err');if(rnErr)rnErr.textContent='';
+      [1,2,3,4].forEach(i=>{const b=document.getElementById('rn-b'+i);if(b)b.className='pw-bar';});
+      const plbl=document.getElementById('rn-plbl');if(plbl)plbl.textContent='';
+      ['cm-old','cm-new','cm-new2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+      const cmErr=document.getElementById('cm-err');if(cmErr)cmErr.textContent='';
+    },50);
   });
 }
 
@@ -1338,21 +1325,22 @@ async function showRejectReasons(restId){
     }
 
     listEl.innerHTML='';
-    snap.docs.forEach(d=>{
-      const o=d.data();
+    // Sort by date
+    const docs = snap.docs.map(d=>d.data()).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    docs.forEach(o=>{
       const date=o.createdAt?new Date(o.createdAt).toLocaleString('ru-RU'):'—';
-      const reason=o.rejectReason||'Сабаб кўрсатилмаган';
+      const reason=o.rejectReason||'—';
       const div=document.createElement('div');
       div.style.cssText='background:var(--bg3);border-radius:10px;padding:.9rem 1rem;border-left:3px solid var(--red);';
-      div.innerHTML=`
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <div style="font-size:13px;font-weight:500;">📞 ${o.phone||'—'}</div>
-          <div style="font-size:11px;color:var(--muted);">#${o.orderNum||'?'} · ${date}</div>
-        </div>
-        <div style="font-size:12px;color:var(--red);">❌ Сабаб: ${reason}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px;">
-          ${(o.items||[]).map(i=>i.name+' × '+i.qty).join(', ')}
-        </div>`;
+      div.innerHTML=
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'+
+          '<div style="font-size:13px;font-weight:500;">📞 '+(o.phone||'—')+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);">#'+(o.orderNum||'?')+' · '+date+'</div>'+
+        '</div>'+
+        '<div style="font-size:12px;color:var(--red);margin-bottom:4px;">❌ Сабаб: '+reason+'</div>'+
+        '<div style="font-size:11px;color:var(--muted);">'+
+          (o.items||[]).map(i=>i.name+' × '+i.qty).join(', ')+
+        '</div>';
       listEl.appendChild(div);
     });
   }catch(e){
@@ -1399,6 +1387,19 @@ function submitRejectReason(){
 
 // Close restStatsModal - stop listeners
 const _origCloseModal = closeModal;
+
+
+function formatPhoneInput(el){
+  let v = el.value.replace(/[^\d+]/g,'');
+  if(!v.startsWith('+998')) v = '+998' + v.replace(/^\+?998?/,'');
+  // Format: +998 XX XXX XX XX
+  const d = v.replace(/\D/g,'');
+  if(d.length<=3) el.value='+';
+  else if(d.length<=5) el.value='+'+d.slice(0,3)+' '+d.slice(3);
+  else if(d.length<=8) el.value='+'+d.slice(0,3)+' '+d.slice(3,5)+' '+d.slice(5);
+  else if(d.length<=10) el.value='+'+d.slice(0,3)+' '+d.slice(3,5)+' '+d.slice(5,8)+' '+d.slice(8);
+  else el.value='+'+d.slice(0,3)+' '+d.slice(3,5)+' '+d.slice(5,8)+' '+d.slice(8,10)+' '+d.slice(10,12);
+}
 
 loadData();
 const __origShow=showPublicMenuFor;
