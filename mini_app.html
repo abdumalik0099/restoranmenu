@@ -633,13 +633,12 @@ function showNoAccess(reason) {
 function startOrdersListener() {
   if (S.unsubOrders) S.unsubOrders();
 
-  // Show refresh bar while loading
   const bar = document.getElementById('refreshBar');
   bar.classList.add('show');
 
   S.unsubOrders = db.collection('orders')
     .where('restId', '==', S.restaurant.id)
-    .orderBy('createdAt', 'desc')
+    // .orderBy('createdAt', 'desc')  <-- MANA SHU QATORNI O'CHIRING YOKI BOSHIGA // QO'YING
     .limit(100)
     .onSnapshot(snap => {
       bar.classList.remove('show');
