@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>MenuPost — Zakazlar</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg2: #111118;
+  --bg3: #18181f;
+  --bg4: #1e1e28;
+  --border: rgba(255,255,255,0.07);
+  --accent: #e8a045;
+  --accent2: #f5c07a;
+  --text: #f0ede8;
+  --muted: #666070;
+  --green: #3dd68c;
+  --red: #ff5f5f;
+  --blue: #5b9cf6;
+  --pending: #f0b429;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── LOADER ── */
+#loader {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 9999; gap: 16px;
+}
+.loader-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem; font-weight: 800;
+  color: var(--accent); letter-spacing: -0.02em;
+}
+.loader-sub { font-size: 11px; color: var(--muted); }
+.loader-dots { display: flex; gap: 6px; }
+.ld { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); opacity: 0.3;
+  animation: ldp 1.2s ease-in-out infinite; }
+.ld:nth-child(2) { animation-delay: .2s; }
+.ld:nth-child(3) { animation-delay: .4s; }
+@keyframes ldp { 0%,100%{opacity:.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.4)} }
+
+/* ── NO ACCESS ── */
+#noAccess {
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 100vh; padding: 2rem; text-align: center; gap: 14px;
+}
+.na-icon { font-size: 3.5rem; }
+.na-title { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 800; }
+.na-sub { font-size: 12px; color: var(--muted); line-height: 1.8; max-width: 300px; }
+.na-box {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+  width: 100%; max-width: 320px; text-align: left;
+}
+.na-box-title { font-size: 11px; color: var(--accent); margin-bottom: 8px; letter-spacing: 0.06em; }
+.na-step { font-size: 12px; color: var(--muted); line-height: 1.9; }
+.na-step b { color: var(--text); }
+.na-id {
+  background: var(--bg3); border: 1px solid rgba(232,160,69,.2);
+  border-radius: 8px; padding: 8px 16px;
+  font-size: 13px; color: var(--accent); letter-spacing: 0.05em;
+  width: 100%; max-width: 320px; text-align: center;
+  word-break: break-all;
+}
+
+/* ── MAIN ── */
+#app { display: none; flex-direction: column; min-height: 100vh; }
+
+/* ── HEADER ── */
+.header {
+  padding: 14px 16px 0;
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg);
+}
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.rest-info { display: flex; flex-direction: column; gap: 2px; }
+.rest-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem; font-weight: 800;
+  color: var(--text); letter-spacing: -0.01em;
+}
+.rest-label { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.live-badge {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(61,214,140,.1); border: 1px solid rgba(61,214,140,.2);
+  border-radius: 20px; padding: 4px 10px; font-size: 11px; color: var(--green);
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+  animation: livepulse 1.5s ease-in-out infinite;
+}
+@keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── STATS ROW ── */
+.stats-row {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 7px; padding: 0 16px 12px;
+}
+.stat-box {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 6px; text-align: center;
+  cursor: pointer; transition: all .15s;
+}
+.stat-box:active { transform: scale(0.95); }
+.stat-box.active { border-color: rgba(232,160,69,.4); background: rgba(232,160,69,.06); }
+.stat-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.3rem; font-weight: 800; line-height: 1;
+}
+.stat-lbl { font-size: 9px; color: var(--muted); margin-top: 3px; letter-spacing: 0.05em; }
+.s-all .stat-num    { color: var(--blue); }
+.s-pending .stat-num  { color: var(--pending); }
+.s-accepted .stat-num { color: var(--green); }
+.s-rejected .stat-num { color: var(--red); }
+
+/* ── TABS ── */
+.tabs {
+  display: flex; gap: 6px;
+  padding: 0 16px 10px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 14px;
+  font-size: 12px; color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.tab.active {
+  background: rgba(232,160,69,.12);
+  border-color: rgba(232,160,69,.35);
+  color: var(--accent);
+}
+.tab-count {
+  background: rgba(255,255,255,.1);
+  border-radius: 10px; padding: 1px 6px;
+  font-size: 10px; min-width: 18px; text-align: center;
+}
+.tab.active .tab-count { background: rgba(232,160,69,.2); color: var(--accent); }
+
+/* ── ORDER LIST ── */
+.orders-wrap { flex: 1; padding: 0 16px 100px; }
+.empty-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4rem 2rem; gap: 10px; text-align: center;
+}
+.empty-icon { font-size: 2.5rem; opacity: .4; }
+.empty-text { font-size: 13px; color: var(--muted); }
+
+/* ── ORDER CARD ── */
+.order-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; margin-bottom: 10px; overflow: hidden;
+  animation: cardIn .35s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes cardIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.order-card.status-accepted { border-color: rgba(61,214,140,.2); }
+.order-card.status-rejected { border-color: rgba(255,95,95,.15); }
+.order-card.status-pending  { border-color: rgba(240,180,41,.25); }
+
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px 8px;
+}
+.order-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem; font-weight: 800; color: var(--text);
+}
+.status-badge {
+  font-size: 10px; padding: 3px 9px; border-radius: 20px;
+  font-family: 'DM Mono', monospace; letter-spacing: 0.04em;
+}
+.badge-pending  { background: rgba(240,180,41,.12); color: var(--pending); border: 1px solid rgba(240,180,41,.3); }
+.badge-accepted { background: rgba(61,214,140,.1);  color: var(--green);   border: 1px solid rgba(61,214,140,.2); }
+.badge-rejected { background: rgba(255,95,95,.1);   color: var(--red);     border: 1px solid rgba(255,95,95,.2); }
+
+.card-body { padding: 0 14px 10px; }
+.order-phone {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; color: var(--text); margin-bottom: 8px;
+}
+.order-items { margin-bottom: 8px; }
+.item-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: 12px;
+}
+.item-row:last-child { border-bottom: none; }
+.item-name { color: var(--muted); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-qty  { color: var(--text); margin: 0 8px; flex-shrink: 0; }
+.item-price { color: var(--accent); font-weight: 500; flex-shrink: 0; }
+
+.order-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 8px; border-top: 1px solid rgba(255,255,255,.05);
+}
+.order-total {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem; font-weight: 700; color: var(--accent);
+}
+.order-time { font-size: 10px; color: var(--muted); }
+
+/* reject reason tag */
+.reject-reason-tag {
+  font-size: 11px; color: var(--red);
+  background: rgba(255,95,95,.08);
+  border: 1px solid rgba(255,95,95,.15);
+  border-radius: 6px; padding: 3px 8px;
+  margin-top: 6px; display: inline-block;
+}
+
+/* ── ACTION BUTTONS ── */
+.card-actions { display: flex; gap: 7px; padding: 0 12px 12px; }
+.act-btn {
+  flex: 1; border: none; border-radius: 9px;
+  padding: 10px 6px; font-size: 12px; font-weight: 500;
+  font-family: 'DM Mono', monospace; cursor: pointer;
+  transition: all .18s; display: flex; align-items: center;
+  justify-content: center; gap: 5px;
+}
+.act-btn:active { transform: scale(0.95); }
+.btn-accept {
+  background: rgba(61,214,140,.12); color: var(--green);
+  border: 1px solid rgba(61,214,140,.25);
+}
+.btn-accept:hover { background: rgba(61,214,140,.22); }
+.btn-reject {
+  background: rgba(255,95,95,.1); color: var(--red);
+  border: 1px solid rgba(255,95,95,.2);
+}
+.btn-reject:hover { background: rgba(255,95,95,.2); }
+.btn-call {
+  flex: 0; padding: 10px 12px;
+  background: rgba(91,156,246,.1); color: var(--blue);
+  border: 1px solid rgba(91,156,246,.2);
+}
+.btn-del {
+  flex: 0; padding: 10px 12px;
+  background: rgba(255,255,255,.05); color: var(--muted);
+  border: 1px solid var(--border);
+}
+.btn-del:hover { color: var(--red); border-color: rgba(255,95,95,.3); }
+
+/* ── STATS PAGE ── */
+#statsPage { display: none; padding: 16px; padding-bottom: 100px; }
+.stats-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem; font-weight: 800;
+  margin-bottom: 16px; color: var(--text);
+}
+.big-stat-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-bottom: 16px;
+}
+.big-stat {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px;
+}
+.big-stat.full { grid-column: 1 / -1; }
+.big-stat-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.06em; }
+.big-stat-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.8rem; font-weight: 800; line-height: 1;
+}
+.recent-title {
+  font-family: 'Syne', sans-serif;
+  font-size: .85rem; font-weight: 700;
+  color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 10px;
+}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(10,10,15,.97); backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex; padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  z-index: 200;
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+  padding: 6px 0; cursor: pointer; transition: all .2s;
+  position: relative;
+}
+.nav-item:active { transform: scale(0.9); }
+.nav-icon { font-size: 20px; line-height: 1; }
+.nav-lbl { font-size: 9px; color: var(--muted); letter-spacing: 0.05em; }
+.nav-item.active .nav-lbl { color: var(--accent); }
+.nav-badge {
+  position: absolute; top: 4px; right: calc(50% - 14px);
+  background: var(--red); color: #fff;
+  border-radius: 10px; padding: 1px 5px;
+  font-size: 9px; font-weight: 700;
+  min-width: 16px; text-align: center; display: none;
+}
+.nav-badge.show { display: block; }
+
+/* ── REJECT MODAL ── */
+.modal-bg {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.85); z-index: 1000;
+  align-items: flex-end; justify-content: center;
+}
+.modal-bg.show { display: flex; }
+.modal-box {
+  background: var(--bg2); border-radius: 22px 22px 0 0;
+  width: 100%; max-width: 520px; padding: 20px 16px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+.modal-handle {
+  width: 36px; height: 4px; background: rgba(255,255,255,.15);
+  border-radius: 4px; margin: -8px auto 16px;
+}
+.modal-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem; font-weight: 800; margin-bottom: 14px;
+}
+.reason-btn {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px;
+  font-size: 13px; color: var(--text); font-family: 'DM Mono', monospace;
+  text-align: left; cursor: pointer; margin-bottom: 7px;
+  transition: all .15s; display: flex; align-items: center; gap: 8px;
+}
+.reason-btn:active, .reason-btn.selected {
+  background: rgba(255,95,95,.1);
+  border-color: rgba(255,95,95,.3); color: var(--red);
+}
+.modal-cancel {
+  width: 100%; background: transparent; border: 1px solid var(--border);
+  border-radius: 10px; padding: 11px;
+  font-size: 13px; color: var(--muted); font-family: 'DM Mono', monospace;
+  cursor: pointer; margin-top: 4px;
+}
+
+/* ── PULL TO REFRESH indicator ── */
+.refresh-bar {
+  height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9000;
+  opacity: 0; transition: opacity .3s;
+}
+.refresh-bar.show { opacity: 1; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg4); border: 1px solid var(--border);
+  border-radius: 22px; padding: 10px 20px;
+  font-size: 13px; color: var(--text);
+  opacity: 0; transition: all .25s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none; z-index: 2000; white-space: nowrap;
+  backdrop-filter: blur(12px);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="refresh-bar" id="refreshBar"></div>
+
+<div id="loader">
+  <div class="loader-logo">MenuPost AI</div>
+  <div class="loader-dots">
+    <div class="ld"></div><div class="ld"></div><div class="ld"></div>
+  </div>
+  <div class="loader-sub" id="loaderStatus">Ulanmoqda...</div>
+</div>
+
+<!-- NO ACCESS -->
+<div id="noAccess">
+  <div class="na-icon">🔒</div>
+  <div class="na-title">Kirish yo'q</div>
+  <div class="na-sub">Bu Mini App faqat zavedenie egalari uchun. Sozlash uchun quyidagi qadamlarni bajaring:</div>
+
+  <div class="na-box">
+    <div class="na-box-title">SOZLASH QO'LLANMASI</div>
+    <div class="na-step">
+      1. <b>Chat ID</b>ni quyidan ko'chiring<br/>
+      2. <b>MenuPost</b> admin panelni oching<br/>
+      3. Menyuni tanlang → <b>📱 Telegram</b><br/>
+      4. <b>Chat ID</b> maydoniga kiriting<br/>
+      5. Saqlang
+    </div>
+  </div>
+
+  <div style="font-size:11px;color:var(--muted);">Sizning Telegram ID:</div>
+  <div class="na-id" id="myChatId">Aniqlanmoqda...</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-top">
+      <div class="rest-info">
+        <div class="rest-label">ZAVEDENIE</div>
+        <div class="rest-name" id="restNameEl">Yuklanmoqda...</div>
+      </div>
+      <div class="live-badge">
+        <div class="live-dot"></div>LIVE
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box s-all"      onclick="setTab('all')">      <div class="stat-num" id="cntAll">0</div>      <div class="stat-lbl">JAMI</div></div>
+    <div class="stat-box s-pending"  onclick="setTab('pending')">  <div class="stat-num" id="cntPending">0</div>  <div class="stat-lbl">KUTISH</div></div>
+    <div class="stat-box s-accepted" onclick="setTab('accepted')"> <div class="stat-num" id="cntAccepted">0</div> <div class="stat-lbl">QABUL</div></div>
+    <div class="stat-box s-rejected" onclick="setTab('rejected')"> <div class="stat-num" id="cntRejected">0</div> <div class="stat-lbl">RAD</div></div>
+  </div>
+
+  <div id="ordersPage">
+    <div class="tabs">
+      <div class="tab active" id="tab-all"      onclick="setTab('all')">      🗂 Barchasi <span class="tab-count" id="tc-all">0</span></div>
+      <div class="tab"        id="tab-pending"  onclick="setTab('pending')">  ⏳ Kutish   <span class="tab-count" id="tc-pending">0</span></div>
+      <div class="tab"        id="tab-accepted" onclick="setTab('accepted')"> ✅ Qabul    <span class="tab-count" id="tc-accepted">0</span></div>
+      <div class="tab"        id="tab-rejected" onclick="setTab('rejected')"> ❌ Rad      <span class="tab-count" id="tc-rejected">0</span></div>
+    </div>
+    <div class="orders-wrap" id="ordersList"></div>
+  </div>
+
+  <div id="statsPage">
+    <div class="stats-title">📊 Statistika</div>
+    <div class="big-stat-grid">
+      <div class="big-stat"><div class="big-stat-label">📅 BUGUN</div><div class="big-stat-num" style="color:var(--blue)"    id="stToday">0</div></div>
+      <div class="big-stat"><div class="big-stat-label">⏳ KUTISH</div><div class="big-stat-num" style="color:var(--pending)" id="stPending">0</div></div>
+      <div class="big-stat"><div class="big-stat-label">✅ QABUL</div> <div class="big-stat-num" style="color:var(--green)"   id="stAccepted">0</div></div>
+      <div class="big-stat"><div class="big-stat-label">❌ RAD</div>   <div class="big-stat-num" style="color:var(--red)"     id="stRejected">0</div></div>
+      <div class="big-stat full"><div class="big-stat-label">💰 DAROMAD (qabul qilingan)</div><div class="big-stat-num" style="color:var(--accent)" id="stRevenue">0 сум</div></div>
+    </div>
+    <div class="recent-title">So'nggi zakazlar</div>
+    <div id="recentOrders"></div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-orders" onclick="showPage('orders')">
+      <div class="nav-icon">🛒</div>
+      <div class="nav-lbl">ZAKAZLAR</div>
+      <div class="nav-badge" id="pendingBadge"></div>
+    </div>
+    <div class="nav-item" id="nav-stats" onclick="showPage('stats')">
+      <div class="nav-icon">📊</div>
+      <div class="nav-lbl">STATISTIKA</div>
+    </div>
+  </div>
+</div>
+
+<!-- REJECT MODAL -->
+<div class="modal-bg" id="rejectModal" onclick="if(event.target===this)closeRejectModal()">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-title">❌ Rad etish sababi</div>
+    <button class="reason-btn" onclick="selectReason(this,'Taom tugagan')">🍽 Taom tugagan</button>
+    <button class="reason-btn" onclick="selectReason(this,'Restoran yopilgan')">🚪 Restoran yopilgan</button>
+    <button class="reason-btn" onclick="selectReason(this,'Juda ko\'p zakaz bor')">⏳ Juda ko'p zakaz</button>
+    <button class="reason-btn" onclick="selectReason(this,'Manzil uzoq')">📍 Manzil uzoq</button>
+    <button class="reason-btn" onclick="selectReason(this,'Boshqa sabab')">✏️ Boshqa sabab</button>
+    <button class="modal-cancel" onclick="closeRejectModal()">Bekor qilish</button>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+/* ════════════════════════════
+   FIREBASE
+════════════════════════════ */
+const fbConfig = {
+  apiKey: "AIzaSyCC8KbaB7Zdu2kAkOCiF-UKa8GgfhsrxU8",
+  authDomain: "menyu-cc1ad.firebaseapp.com",
+  projectId: "menyu-cc1ad",
+  storageBucket: "menyu-cc1ad.firebasestorage.app",
+  messagingSenderId: "123543943109",
+  appId: "1:123543943109:web:2305411248d96173f8fdac"
+};
+firebase.initializeApp(fbConfig);
+const db = firebase.firestore();
+
+/* ════════════════════════════
+   TELEGRAM WEB APP
+════════════════════════════ */
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  try { tg.setHeaderColor('#0a0a0f'); } catch(e) {}
+  try { tg.setBackgroundColor('#0a0a0f'); } catch(e) {}
+}
+
+/* ════════════════════════════
+   STATE
+════════════════════════════ */
+const S = {
+  chatId: null,
+  restaurant: null,
+  orders: [],
+  currentTab: 'all',
+  currentPage: 'orders',
+  unsubOrders: null,
+};
+
+/* ════════════════════════════
+   HELPERS
+════════════════════════════ */
+function toast(msg) {
+  const el = document.getElementById('toastEl');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function setLoaderStatus(msg) {
+  const el = document.getElementById('loaderStatus');
+  if (el) el.textContent = msg;
+}
+
+function fmtNum(n) { return n ? Number(n).toLocaleString('ru-RU') : '0'; }
+
+function fmtTime(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleString('ru-RU', {
+    day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'
+  });
+}
+
+/* ════════════════════════════
+   INIT — Chat ID detection
+════════════════════════════ */
+async function init() {
+  setLoaderStatus('Telegram ID aniqlanmoqda...');
+
+  /* 1. Telegram WebApp user */
+  const tgUser = tg?.initDataUnsafe?.user;
+  if (tgUser?.id) {
+    S.chatId = String(tgUser.id);
+  }
+
+  /* 2. URL param fallback (dev/test mode) */
+  if (!S.chatId) {
+    const p = new URLSearchParams(location.search);
+    S.chatId = p.get('chat_id') || p.get('id') || p.get('chatId');
+  }
+
+  /* 3. Show chatId for setup help */
+  document.getElementById('myChatId').textContent = S.chatId || 'Telegram orqali oching';
+
+  if (!S.chatId) {
+    setLoaderStatus('ID topilmadi');
+    showNoAccess('Telegram orqali ochish kerak. URL: ?chat_id=SIZNING_ID');
+    return;
+  }
+
+  setLoaderStatus('Restaurant qidirilmoqda...');
+
+  /* 4. Find restaurant by tgChatId */
+  try {
+    // Try exact match first
+    let snap = await db.collection('restaurants')
+      .where('tgChatId', '==', S.chatId)
+      .limit(1).get();
+
+    // If not found, try with number (in case stored as number)
+    if (snap.empty && !isNaN(S.chatId)) {
+      snap = await db.collection('restaurants')
+        .where('tgChatId', '==', Number(S.chatId))
+        .limit(1).get();
+    }
+
+    if (snap.empty) {
+      showNoAccess('Bu Chat ID (' + S.chatId + ') ga biriktirilgan zavedenie topilmadi. MenuPost admin panelida Telegram sozlamalarini tekshiring.');
+      return;
+    }
+
+    const doc = snap.docs[0];
+    S.restaurant = { id: doc.id, ...doc.data() };
+    document.getElementById('restNameEl').textContent = S.restaurant.name || 'Zavedenie';
+
+    // Show app
+    document.getElementById('loader').style.display = 'none';
+    const app = document.getElementById('app');
+    app.style.display = 'flex';
+    app.style.flexDirection = 'column';
+
+    startOrdersListener();
+
+  } catch(e) {
+    console.error('init error:', e);
+    showNoAccess('Firebase xatosi: ' + e.message + '\n\nFirestore Rules ni tekshiring!');
+  }
+}
+
+function showNoAccess(reason) {
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('noAccess').style.display = 'flex';
+  if (reason) {
+    const sub = document.querySelector('.na-sub');
+    if (sub) sub.textContent = reason;
+  }
+}
+
+/* ════════════════════════════
+   REALTIME ORDERS LISTENER
+════════════════════════════ */
+function startOrdersListener() {
+  if (S.unsubOrders) S.unsubOrders();
+
+  // Show refresh bar while loading
+  const bar = document.getElementById('refreshBar');
+  bar.classList.add('show');
+
+  S.unsubOrders = db.collection('orders')
+    .where('restId', '==', S.restaurant.id)
+    .orderBy('createdAt', 'desc')
+    .limit(100)
+    .onSnapshot(snap => {
+      bar.classList.remove('show');
+      S.orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      updateUI();
+    }, err => {
+      bar.classList.remove('show');
+      console.error('orders listener error:', err);
+      toast('⚠️ Firestore xatosi: ' + err.code);
+    });
+}
+
+/* ════════════════════════════
+   UI UPDATE
+════════════════════════════ */
+function updateUI() {
+  const all      = S.orders;
+  const pending  = all.filter(o => o.status === 'pending');
+  const accepted = all.filter(o => o.status === 'accepted');
+  const rejected = all.filter(o => o.status === 'rejected');
+
+  // Counts
+  document.getElementById('cntAll').textContent      = all.length;
+  document.getElementById('cntPending').textContent  = pending.length;
+  document.getElementById('cntAccepted').textContent = accepted.length;
+  document.getElementById('cntRejected').textContent = rejected.length;
+  document.getElementById('tc-all').textContent      = all.length;
+  document.getElementById('tc-pending').textContent  = pending.length;
+  document.getElementById('tc-accepted').textContent = accepted.length;
+  document.getElementById('tc-rejected').textContent = rejected.length;
+
+  // Pending badge — vibrate if new pending
+  const badge = document.getElementById('pendingBadge');
+  const prevPending = parseInt(badge.textContent) || 0;
+  if (pending.length > 0) {
+    badge.textContent = pending.length;
+    badge.classList.add('show');
+    if (pending.length > prevPending && tg) {
+      try { tg.HapticFeedback?.notificationOccurred('warning'); } catch(e) {}
+    }
+  } else {
+    badge.classList.remove('show');
+  }
+
+  renderOrders();
+  if (S.currentPage === 'stats') updateStats();
+}
+
+/* ════════════════════════════
+   RENDER ORDERS
+════════════════════════════ */
+function renderOrders() {
+  const el = document.getElementById('ordersList');
+  let list = S.orders;
+  if (S.currentTab !== 'all') list = list.filter(o => o.status === S.currentTab);
+
+  if (!list.length) {
+    const labels = {
+      all: 'Hech qanday zakaz yo\'q', pending: 'Kutilayotgan zakazlar yo\'q',
+      accepted: 'Qabul qilingan zakazlar yo\'q', rejected: 'Rad etilgan zakazlar yo\'q'
+    };
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <div class="empty-text">${labels[S.currentTab] || 'Zakazlar yo\'q'}</div>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = '';
+  list.forEach((order, i) => el.appendChild(buildOrderCard(order, i)));
+}
+
+function buildOrderCard(order, idx) {
+  const card = document.createElement('div');
+  card.className = `order-card status-${order.status}`;
+  card.style.animationDelay = Math.min(idx * 35, 300) + 'ms';
+
+  const statusLabel = { pending:'⏳ Kutish', accepted:'✅ Qabul', rejected:'❌ Rad' }[order.status] || order.status;
+
+  const items = (order.items || []);
+  const unit = order.unit || 'сум';
+
+  const itemsHtml = items.map(it => {
+    const qty = it.qty || 1;
+    const rawPrice = parseInt(String(it.price || '').replace(/\D/g,'')) || 0;
+    const total = rawPrice * qty;
+    return `<div class="item-row">
+      <span class="item-name">${it.name || '—'}</span>
+      <span class="item-qty">×${qty}</span>
+      ${total ? `<span class="item-price">${fmtNum(total)} ${it.unit||unit}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  const totalHtml = order.total
+    ? `<div class="order-total">${fmtNum(order.total)} ${unit}</div>`
+    : '<div></div>';
+
+  // Reject reason
+  const reasonHtml = order.status === 'rejected' && order.rejectReason
+    ? `<div class="reject-reason-tag">❌ ${order.rejectReason}</div>`
+    : '';
+
+  // Action buttons
+  let actionsHtml = '';
+  if (order.status === 'pending') {
+    actionsHtml = `<div class="card-actions">
+      <button class="act-btn btn-accept" onclick="acceptOrder('${order.id}')">✅ Qabul</button>
+      <button class="act-btn btn-reject" onclick="openRejectModal('${order.id}')">❌ Rad</button>
+      ${order.phone ? `<button class="act-btn btn-call" onclick="callPhone('${order.phone}')" title="Qo'ng'iroq">📞</button>` : ''}
+      <button class="act-btn btn-del" onclick="deleteOrder('${order.id}')" title="O'chirish">🗑</button>
+    </div>`;
+  } else {
+    actionsHtml = `<div class="card-actions">
+      <button class="act-btn btn-del" style="flex:1" onclick="deleteOrder('${order.id}')">🗑 O'chirish</button>
+    </div>`;
+  }
+
+  card.innerHTML = `
+    <div class="card-head">
+      <div class="order-num">#${order.orderNum || '?'}</div>
+      <div class="status-badge badge-${order.status}">${statusLabel}</div>
+    </div>
+    <div class="card-body">
+      <div class="order-phone">📞 <span>${order.phone || '—'}</span></div>
+      <div class="order-items">${itemsHtml || '<div class="empty-text">Taomlar ko\'rsatilmagan</div>'}</div>
+      ${reasonHtml}
+      <div class="order-footer">
+        ${totalHtml}
+        <div class="order-time">${fmtTime(order.createdAt)}</div>
+      </div>
+    </div>
+    ${actionsHtml}
+  `;
+  return card;
+}
+
+/* ════════════════════════════
+   STATS
+════════════════════════════ */
+function updateStats() {
+  const all = S.orders;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayTs = today.getTime();
+
+  const todayOrders = all.filter(o => o.createdAt >= todayTs);
+  const pending     = all.filter(o => o.status === 'pending');
+  const accepted    = all.filter(o => o.status === 'accepted');
+  const rejected    = all.filter(o => o.status === 'rejected');
+  const revenue     = accepted.reduce((s,o) => s + (o.total||0), 0);
+  const unit        = all.length ? (all[0].unit||'сум') : 'сум';
+
+  document.getElementById('stToday').textContent    = todayOrders.length;
+  document.getElementById('stPending').textContent  = pending.length;
+  document.getElementById('stAccepted').textContent = accepted.length;
+  document.getElementById('stRejected').textContent = rejected.length;
+  document.getElementById('stRevenue').textContent  = fmtNum(revenue) + ' ' + unit;
+
+  const recentEl = document.getElementById('recentOrders');
+  recentEl.innerHTML = '';
+  const recent = all.slice(0, 10);
+  if (!recent.length) {
+    recentEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Zakazlar yo\'q</div></div>';
+    return;
+  }
+  recent.forEach((o, i) => recentEl.appendChild(buildOrderCard(o, i)));
+}
+
+/* ════════════════════════════
+   TABS & PAGES
+════════════════════════════ */
+function setTab(tab) {
+  S.currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const tabEl = document.getElementById('tab-' + tab);
+  if (tabEl) tabEl.classList.add('active');
+  renderOrders();
+}
+
+function showPage(page) {
+  S.currentPage = page;
+  document.getElementById('ordersPage').style.display = page === 'orders' ? 'block' : 'none';
+  document.getElementById('statsPage').style.display  = page === 'stats'  ? 'block' : 'none';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + page);
+  if (navEl) navEl.classList.add('active');
+  if (page === 'stats') updateStats();
+}
+
+/* ════════════════════════════
+   ORDER ACTIONS
+════════════════════════════ */
+async function acceptOrder(orderId) {
+  try {
+    await db.collection('orders').doc(orderId).update({ status: 'accepted' });
+    toast('✅ Zakaz qabul qilindi!');
+    try { tg?.HapticFeedback?.notificationOccurred('success'); } catch(e) {}
+  } catch(e) {
+    toast('❌ Xato: ' + e.message);
+  }
+}
+
+let _rejectId = null;
+function openRejectModal(orderId) {
+  _rejectId = orderId;
+  document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('rejectModal').classList.add('show');
+}
+function closeRejectModal() {
+  document.getElementById('rejectModal').classList.remove('show');
+  _rejectId = null;
+}
+
+async function selectReason(btn, reason) {
+  document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  if (!_rejectId) return;
+  try {
+    await db.collection('orders').doc(_rejectId).update({
+      status: 'rejected',
+      rejectReason: reason
+    });
+    closeRejectModal();
+    toast('❌ Zakaz rad etildi: ' + reason);
+    try { tg?.HapticFeedback?.notificationOccurred('warning'); } catch(e) {}
+  } catch(e) {
+    toast('❌ Xato: ' + e.message);
+  }
+}
+
+async function deleteOrder(orderId) {
+  if (!confirm('Bu zakazni o\'chirasizmi?')) return;
+  try {
+    await db.collection('orders').doc(orderId).delete();
+    toast('🗑 Zakaz o\'chirildi');
+  } catch(e) {
+    toast('❌ Xato: ' + e.message);
+  }
+}
+
+function callPhone(phone) {
+  if (phone) window.open('tel:' + phone.replace(/\s/g, ''));
+}
+
+/* ════════════════════════════
+   START
+════════════════════════════ */
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
