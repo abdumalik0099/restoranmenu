@@ -524,25 +524,38 @@ if (tg) {
 ════════════════════════════ */
 
 async function clearAllOrders() {
-  const confirmDelete = confirm("Telegramdagi hamma zakazlar o'chiriladi !!!");
-  if (!confirmDelete) return;
+  if (!confirm("Mini App ro'yxatini tozalamoqchimisiz? (Statistika o'chmaydi)")) return;
 
   try {
-    // Faqat 'pending' (kutilayotgan) holatdagi zakazlarni o'chirish
-    // Shunda statistika (qabul qilinganlar) joyida qoladi
+    setLoaderStatus('Tozalanmoqda...');
+    
+    // Faqat 'pending' (kutilayotgan) zakazlarni olamiz
     const snap = await db.collection('orders')
       .where('restId', '==', S.restaurant.id)
-      .where('status', '==', 'pending') 
+      .where('status', '==', 'pending')
       .get();
+
+    if (snap.empty) {
+      toast("Tozalash uchun yangi zakazlar yo'q.");
+      document.getElementById('loader').style.display = 'none';
+      return;
+    }
 
     const batch = db.batch();
     snap.docs.forEach(doc => {
-      batch.delete(doc.ref);
+      // BU YERDA DELETE EMAS, UPDATE ISHLATAMIZ!
+      // Statusni 'archived' (arxivlangan) ga o'zgartiramiz
+      batch.update(doc.ref, { status: 'archived' });
     });
 
     await batch.commit();
-    toast("✅ Yangi zakazlar ro'yxati tozalandi!");
+    
+    document.getElementById('loader').style.display = 'none';
+    toast("✅ Ro'yxat tozalandi! (Statistika saqlab qolindi)");
+    
   } catch (e) {
+    console.error(e);
+    document.getElementById('loader').style.display = 'none';
     toast("❌ Xato: " + e.message);
   }
 }
