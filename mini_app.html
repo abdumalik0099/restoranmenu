@@ -449,6 +449,9 @@ body {
 
   <div id="statsPage">
     <div class="stats-title">📊 Statistika</div>
+    <button onclick="clearAllOrders()" style="background:#e74c3c; color:white; border:none; padding:12px; border-radius:10px; margin-bottom:15px; width:100%; font-weight:bold; cursor:pointer;">
+    🗑 Barcha zakazlarni o'chirish
+    </button>
     <div class="big-stat-grid">
       <div class="big-stat"><div class="big-stat-label">📅 BUGUN</div><div class="big-stat-num" style="color:var(--blue)"    id="stToday">0</div></div>
       <div class="big-stat"><div class="big-stat-label">⏳ KUTISH</div><div class="big-stat-num" style="color:var(--pending)" id="stPending">0</div></div>
@@ -514,6 +517,33 @@ if (tg) {
   try { tg.setHeaderColor('#0a0a0f'); } catch(e) {}
   try { tg.setBackgroundColor('#0a0a0f'); } catch(e) {}
 }
+
+
+/* ════════════════════════════
+   TELEGRAM WEB APP RESET
+════════════════════════════ */
+
+async function clearAllOrders() {
+  if (!confirm("Haqiqatdan ham BARCHA zakazlarni o'chirib tashlamoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi!")) return;
+  
+  try {
+    const snap = await db.collection('orders').where('restId', '==', S.restaurant.id).get();
+    const batch = db.batch();
+    
+    snap.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+    toast('✅ Barcha zakazlar tozalandi!');
+  } catch(e) {
+    toast('❌ Xato: ' + e.message);
+  }
+}
+
+
+
+
 
 /* ════════════════════════════
    STATE
