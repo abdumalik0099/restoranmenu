@@ -524,23 +524,28 @@ if (tg) {
 ════════════════════════════ */
 
 async function clearAllOrders() {
-  if (!confirm("Haqiqatdan ham BARCHA zakazlarni o'chirib tashlamoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi!")) return;
-  
+  const confirmDelete = confirm("Telegramdagi hamma zakazlar o'chiriladi !!!");
+  if (!confirmDelete) return;
+
   try {
-    const snap = await db.collection('orders').where('restId', '==', S.restaurant.id).get();
+    // Faqat 'pending' (kutilayotgan) holatdagi zakazlarni o'chirish
+    // Shunda statistika (qabul qilinganlar) joyida qoladi
+    const snap = await db.collection('orders')
+      .where('restId', '==', S.restaurant.id)
+      .where('status', '==', 'pending') 
+      .get();
+
     const batch = db.batch();
-    
     snap.docs.forEach(doc => {
       batch.delete(doc.ref);
     });
-    
+
     await batch.commit();
-    toast('✅ Barcha zakazlar tozalandi!');
-  } catch(e) {
-    toast('❌ Xato: ' + e.message);
+    toast("✅ Yangi zakazlar ro'yxati tozalandi!");
+  } catch (e) {
+    toast("❌ Xato: " + e.message);
   }
 }
-
 
 
 
