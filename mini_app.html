@@ -75,8 +75,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-
 .cooking-timer{font-size:11px;color:var(--orange);margin-top:6px;display:flex;align-items:center;gap:5px;}
 .timer-anim{animation:timerBlink 1s ease-in-out infinite;}
 @keyframes timerBlink{0%,100%{opacity:1}50%{opacity:.4}}
-.card-actions{display:flex;gap:6px;padding:0 12px 12px;flex-wrap:wrap;}
-.act-btn{flex:1;min-width:0;border:none;border-radius:9px;padding:10px 6px;font-size:11px;font-weight:500;font-family:'DM Mono',monospace;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:4px;}
+.card-actions{display:flex;flex-direction:column;gap:6px;padding:0 12px 12px;}
+.card-actions-row{display:flex;gap:6px;}
+.act-btn{flex:1;min-width:0;border:none;border-radius:9px;padding:10px 8px;font-size:12px;font-weight:500;font-family:'DM Mono',monospace;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:5px;}
 .act-btn:active{transform:scale(.95);}
 .btn-cook{background:rgba(255,140,66,.12);color:var(--orange);border:1px solid rgba(255,140,66,.25);}
 .btn-accept{background:rgba(61,214,140,.12);color:var(--green);border:1px solid rgba(61,214,140,.25);}
@@ -151,7 +152,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-
     <div class="tabs">
       <div class="tab active" id="tab-all"      onclick="setTab('all')">      🗂 Barchasi <span class="tab-count" id="tc-all">0</span></div>
       <div class="tab"        id="tab-pending"  onclick="setTab('pending')">  ⏳ Kutish   <span class="tab-count" id="tc-pending">0</span></div>
-      <div class="tab"        id="tab-cooking"  onclick="setTab('cooking')">  🍳 Tayyorlanayotganlar   <span class="tab-count" id="tc-cooking">0</span></div>
+      <div class="tab"        id="tab-cooking"  onclick="setTab('cooking')">  🍳 Tayyor   <span class="tab-count" id="tc-cooking">0</span></div>
       <div class="tab"        id="tab-accepted" onclick="setTab('accepted')"> ✅ Qabul    <span class="tab-count" id="tc-accepted">0</span></div>
       <div class="tab"        id="tab-rejected" onclick="setTab('rejected')"> ❌ Rad      <span class="tab-count" id="tc-rejected">0</span></div>
     </div>
@@ -297,30 +298,30 @@ function buildOrderCard(order,idx){
   let actionsHtml='';
   if(order.status==='pending'){
     actionsHtml=`<div class="card-actions">
-      <button class="act-btn btn-cook"   onclick="startCooking('${order.id}')">🍳 Tayyorlash</button>
-      <button class="act-btn btn-accept" onclick="acceptOrder('${order.id}')">✅ Qabul</button>
-      <button class="act-btn btn-reject" onclick="openRejectModal('${order.id}')">❌ Rad</button>
-      ${order.phone?`<button class="act-btn btn-call" onclick="callPhone('${order.phone}')">📞</button>`:''}
-      <button class="act-btn btn-hide"   onclick="hideOrder('${order.id}')">👁</button>
+      <div class="card-actions-row">
+        <button class="act-btn btn-cook"   onclick="startCooking('${order.id}')">🍳 Tayyorlash</button>
+        <button class="act-btn btn-accept" onclick="acceptOrder('${order.id}')">✅ Qabul</button>
+        <button class="act-btn btn-reject" onclick="openRejectModal('${order.id}')">❌ Rad</button>
+      </div>
+      <div class="card-actions-row">
+        ${order.phone?`<button class="act-btn btn-call" onclick="callPhone('${order.phone}')">📞 Qo'ng'iroq</button>`:''}
+        <button class="act-btn btn-hide" onclick="hideOrder('${order.id}')">👁 Yashirish</button>
+      </div>
     </div>`;
   }else if(order.status==='cooking'){
     actionsHtml=`<div class="card-actions">
-      <button class="act-btn btn-accept" onclick="acceptOrder('${order.id}')">✅ Tayyor bo'ldi</button>
-      <button class="act-btn btn-reject" onclick="openRejectModal('${order.id}')">❌ Rad</button>
-      ${order.phone?`<button class="act-btn btn-call" onclick="callPhone('${order.phone}')">📞</button>`:''}
-      <button class="act-btn btn-hide"   onclick="hideOrder('${order.id}')">👁</button>
+      <div class="card-actions-row">
+        <button class="act-btn btn-accept" onclick="acceptOrder('${order.id}')">✅ Tayyor bo'ldi</button>
+        <button class="act-btn btn-reject" onclick="openRejectModal('${order.id}')">❌ Rad</button>
+      </div>
+      <div class="card-actions-row">
+        ${order.phone?`<button class="act-btn btn-call" onclick="callPhone('${order.phone}')">📞 Qo'ng'iroq</button>`:''}
+        <button class="act-btn btn-hide" onclick="hideOrder('${order.id}')">👁 Yashirish</button>
+      </div>
     </div>`;
   }else{
-    actionsHtml=`<div class="card-actions"><button class="act-btn btn-hide" style="flex:1" onclick="hideOrder('${order.id}')">👁 Yashirish</button></div>`;
+    actionsHtml=`<div class="card-actions"><div class="card-actions-row"><button class="act-btn btn-hide" style="flex:1" onclick="hideOrder('${order.id}')">👁 Yashirish</button></div></div>`;
   }
-  card.innerHTML=`
-    <div class="card-head"><div class="order-num">#${order.orderNum||'?'}</div><div class="status-badge badge-${order.status}">${statusLabel}</div></div>
-    <div class="card-body">
-      <div class="order-phone">📞 <span>${order.phone||'—'}</span></div>
-      <div class="order-items">${itemsHtml||'<div class="empty-text">—</div>'}</div>
-      ${reasonHtml}${cookingHtml}
-      <div class="order-footer">${order.total?`<div class="order-total">${fmtNum(order.total)} ${unit}</div>`:'<div></div>'}<div class="order-time">${fmtTime(order.createdAt)}</div></div>
-    </div>${actionsHtml}`;
   return card;
 }
 function updateStats(){
