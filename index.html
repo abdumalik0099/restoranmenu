@@ -259,6 +259,8 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
 .order-bubble.show{transform:scale(1);opacity:1;pointer-events:all;}
 .order-bubble.accepted{border-color:rgba(76,175,125,.6);box-shadow:0 4px 20px rgba(76,175,125,.3);}
 .order-bubble.rejected{border-color:rgba(224,85,85,.6);box-shadow:0 4px 20px rgba(224,85,85,.3);}
+.order-bubble.cooking{border-color:rgba(255,140,66,.6);box-shadow:0 4px 20px rgba(255,140,66,.35);animation:cookingPulse 1.8s ease-in-out infinite;}
+@keyframes cookingPulse{0%,100%{box-shadow:0 4px 20px rgba(255,140,66,.35);}50%{box-shadow:0 4px 28px rgba(255,140,66,.7);}}
 .order-bubble-num{position:absolute;top:-4px;right:-4px;background:var(--accent);color:#000;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:"DM Sans",sans-serif;}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;align-items:center;justify-content:center;padding:1rem;}
 .modal-overlay.show{display:flex;}
@@ -756,7 +758,7 @@ function loadData(){
       if(!S.restaurants.length){setLoader(false);refreshUI();return;}
       setLoader(false);
       const urlId=new URLSearchParams(location.search).get('menu');
-      if(urlId){const r=S.restaurants.find(x=>x.id===urlId);if(r){S.currentRestId=urlId;S.currentPublicRestId=urlId;S.isPublicView=true;showPublicMenuFor(r).then(()=>resumeActiveOrder());return;}}
+      if(urlId){const r=S.restaurants.find(x=>x.id===urlId);if(r){S.currentRestId=urlId;S.currentPublicRestId=urlId;S.isPublicView=true;showPublicMenuFor(r);return;}}
     }else{if(!S.restaurants.length)return;}
     setLoader(false);refreshUI();
   },err=>{console.error(err);setLoader(false);toast('Ошибка подключения');});
@@ -1084,67 +1086,20 @@ async function sendOrder(){
   const keys=Object.keys(S.cart);
   const total=cartTotal();
   const unit=keys.length?S.cart[keys[0]].dish.priceUnit||'сум':'сум';
-  let lines='';keys.forEach(k=>{const{dish,qty}=S.cart[k];const p=parsePrice(dish.price);lines+='  • '+dish.name+' × '+qty+(p?' = '+formatPrice(p*qty,unit):'')+'';});
-
-  // Mavjud pending/cooking zakaz bormi tekshirish
-  let existingOrder=null;
-  try{
-    const exSnap=await db.collection('orders')
-      .where('restId','==',r.id).where('phone','==',phone)
-      .where('status','in',['pending','cooking']).limit(1).get();
-    if(!exSnap.empty) existingOrder={id:exSnap.docs[0].id,...exSnap.docs[0].data()};
-  }catch(e){}
-
-  if(existingOrder){
-    // Mavjud zakazga qo'shamiz
-    const newItems=[...(existingOrder.items||[])];
-    keys.forEach(k=>{
-      const{dish,qty}=S.cart[k];
-      const idx=newItems.findIndex(i=>i.name===dish.name);
-      if(idx>=0) newItems[idx]={...newItems[idx],qty:(newItems[idx].qty||0)+qty};
-      else newItems.push({name:dish.name,qty,price:dish.price,unit:dish.priceUnit||unit});
-    });
-    const newTotal=(existingOrder.total||0)+total;
-    try{
-      await db.collection('orders').doc(existingOrder.id).update({items:newItems,total:newTotal,updatedAt:Date.now()});
-    }catch(e){toast('Ошибка обновления заказа');btn.disabled=false;btn.textContent='✅ Буюртмани юбориш';return;}
-    const addText='➕ <b>ЗАКАЗГА ҚЎШИЛДИ!</b>  #'+existingOrder.orderNum+'🏪 <b>'+r.name+'</b>📞 '+phone+'📋 <b>Қўшилган:</b>'+lines+'💰 <b>Янги жами: '+(newTotal?formatPrice(newTotal,unit):'—')+'</b>🕐 '+new Date().toLocaleString('ru-RU');
-    await tgSendOrderUpdate(addText,existingOrder.id,phone,r.tgToken,r.tgChatId);
-    btn.disabled=false;btn.textContent='✅ Буюртмани юбориш';
-    closeCart();S.cart={};updateCartUI();
-    const ac=document.querySelector('.pm-cat.active');
-    renderPMContent(r,ac&&ac.textContent!=='Все'?ac.textContent:null);
-    showOrderModal(existingOrder.id,existingOrder.orderNum);
-    listenOrderStatus(existingOrder.id);
-    toast('✅ Заказингизга қўшилди!');
-  }else{
-    // Yangi zakaz
-    const orderNum=await getNextOrderNumber(r.id);
-    const orderId='order_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-    const orderData={id:orderId,restId:r.id,restName:r.name,phone,orderNum,items:keys.map(k=>({name:S.cart[k].dish.name,qty:S.cart[k].qty,price:S.cart[k].dish.price,unit:S.cart[k].dish.priceUnit||'сум'})),total,unit,status:'pending',createdAt:Date.now()};
-    try{await db.collection('orders').doc(orderId).set(orderData);}catch(e){toast('Ошибка сохранения заказа');btn.disabled=false;btn.textContent='✅ Буюртмани юбориш';return;}
-    const text='🛒 <b>ЯНГИ ЗАКАЗ!</b>  #'+orderNum+'🏪 Заведение: <b>'+r.name+'</b>📞 Телефон: <b>'+phone+'</b>📋 <b>Заказ:</b>'+lines+'💰 <b>Итого: '+(total?formatPrice(total,unit):'—')+'</b>🕐 '+new Date().toLocaleString('ru-RU');
-    await tgSendOrder(text,orderId,phone,r.tgToken,r.tgChatId);
-    btn.disabled=false;btn.textContent='✅ Буюртмани юбориш';
-    closeCart();S.cart={};updateCartUI();
-    const ac=document.querySelector('.pm-cat.active');
-    renderPMContent(r,ac&&ac.textContent!=='Все'?ac.textContent:null);
-    showOrderModal(orderId,orderNum);
-    listenOrderStatus(orderId);
-  }
-};
-
-async function tgSendOrderUpdate(text,orderId,phone,token,chatId){
-  const tok=token||ADMIN_TG_TOKEN;
-  const cht=String(chatId||ADMIN_TG_CHAT);
-  try{
-    await fetch('https://api.telegram.org/bot'+tok+'/sendMessage',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({chat_id:cht,text,parse_mode:'HTML'})
-    });
-  }catch(e){console.error('[TG update]',e);}
+  let lines='';keys.forEach(k=>{const{dish,qty}=S.cart[k];const p=parsePrice(dish.price);lines+='  • '+dish.name+' × '+qty+(p?' = '+formatPrice(p*qty,unit):'')+'\n';});
+  const orderNum=await getNextOrderNumber(r.id);
+  const orderId='order_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  const orderData={id:orderId,restId:r.id,restName:r.name,phone,orderNum,items:keys.map(k=>({name:S.cart[k].dish.name,qty:S.cart[k].qty,price:S.cart[k].dish.price,unit:S.cart[k].dish.priceUnit||'сум'})),total,unit,status:'pending',createdAt:Date.now()};
+  try{await db.collection('orders').doc(orderId).set(orderData);}catch(e){toast('Ошибка сохранения заказа');btn.disabled=false;btn.textContent='✅ Буюртмани юбориш';return;}
+  const text='🛒 <b>ЯНГИ ЗАКАЗ!</b>  #'+orderNum+'\n\n🏪 Заведение: <b>'+r.name+'</b>\n📞 Телефон: <b>'+phone+'</b>\n\n📋 <b>Заказ:</b>\n'+lines+'\n💰 <b>Итого: '+(total?formatPrice(total,unit):'—')+'</b>\n\n🕐 '+new Date().toLocaleString('ru-RU');
+  await tgSendOrder(text,orderId,phone,r.tgToken,r.tgChatId);
+  btn.disabled=false;btn.textContent='✅ Буюртмани юбориш';
+  closeCart();S.cart={};updateCartUI();
+  const ac=document.querySelector('.pm-cat.active');
+  renderPMContent(r,ac&&ac.textContent!=='Все'?ac.textContent:null);
+  showOrderModal(orderId,orderNum);
+  listenOrderStatus(orderId);
 }
-
 
 async function getNextOrderNumber(restId){
   const ref=db.collection('counters').doc(restId);
@@ -1180,10 +1135,11 @@ function collapseOrderModal(){
   setTimeout(()=>{
     box.style.transition='none';box.style.transform='translate(-50%,-50%) scale(0.7)';box.style.opacity='0';box.style.borderRadius='22px';
     const bubble=document.getElementById('orderBubble');
-    bubble.classList.remove('accepted','rejected');
+    bubble.classList.remove('accepted','rejected','cooking');
     if(_curOrderStatus==='accepted')bubble.classList.add('accepted');
     if(_curOrderStatus==='rejected')bubble.classList.add('rejected');
-    document.getElementById('orderBubbleIcon').textContent=_curOrderStatus==='accepted'?'✅':_curOrderStatus==='rejected'?'❌':'🛒';
+    if(_curOrderStatus==='cooking')bubble.classList.add('cooking');
+    document.getElementById('orderBubbleIcon').textContent=_curOrderStatus==='accepted'?'✅':_curOrderStatus==='rejected'?'❌':_curOrderStatus==='cooking'?'🍳':'🛒';
     bubble.classList.add('show');
   },580);
 }
@@ -1197,54 +1153,30 @@ function expandOrderModal(){
 function onOrderOverlayClick(e){if(e.target===document.getElementById('orderModalOverlay'))collapseOrderModal();}
 function updateOrderModal(status,orderData){
   _curOrderStatus=status;
-  if(status==='accepted'){document.getElementById('orderModalTitle').textContent='✅ Заказ қабул қилинди!';document.getElementById('orderModalSub').innerHTML='Официант яқинда сизга келади.<br/>Сизнинг заказингиз рақами:';_setMS('#4caf7d','linear-gradient(135deg,rgba(76,175,125,.2),rgba(76,175,125,.05))','rgba(76,175,125,.5)','#4caf7d','#4caf7d');const b=document.getElementById('orderBubble');if(b.classList.contains('show')){b.classList.add('accepted');document.getElementById('orderBubbleIcon').textContent='✅';}if(!_modalCollapsed)setTimeout(collapseOrderModal,5000);}
-  else if(status==='rejected'){const reason=orderData&&orderData.rejectReason?orderData.rejectReason:'';document.getElementById('orderModalTitle').textContent='❌ Заказ рад этилди';document.getElementById('orderModalSub').innerHTML=(reason?'📝 <b>Сабаб: '+reason+'</b><br/>':'')+'Официантга мурожаат қилинг.<br/>Сизнинг заказингиз рақами:';_setMS('#e05555','linear-gradient(135deg,rgba(224,85,85,.2),rgba(224,85,85,.05))','rgba(224,85,85,.5)','#e05555','#e05555');const b=document.getElementById('orderBubble');if(b.classList.contains('show')){b.classList.add('rejected');document.getElementById('orderBubbleIcon').textContent='❌';}if(!_modalCollapsed)setTimeout(collapseOrderModal,5000);}
+  if(status==='cooking'){
+    document.getElementById('orderModalTitle').textContent='🍳 Таом тайёрланмоқда!';
+    document.getElementById('orderModalSub').innerHTML='Ошпаз сизнинг таомингизни тайёрламоқда.<br/>Сизнинг заказингиз рақами:';
+    _setMS('#ff8c42','linear-gradient(135deg,rgba(255,140,66,.2),rgba(255,140,66,.05))','rgba(255,140,66,.5)','#ff8c42','#ff8c42');
+    const b=document.getElementById('orderBubble');
+    b.classList.remove('accepted','rejected');b.classList.add('cooking');
+    document.getElementById('orderBubbleIcon').textContent='🍳';
+    // Modal yopiq (bubble ko'rinayotgan) bo'lsa — qayta ochib xabar beramiz
+    if(_modalCollapsed){
+      _modalCollapsed=false;b.classList.remove('show');
+      const overlay=document.getElementById('orderModalOverlay');const box=document.getElementById('orderModalBox');
+      box.style.transition='none';box.style.transform='translate(-50%,-50%) scale(0.7)';box.style.opacity='0';box.style.borderRadius='22px';
+      overlay.classList.add('show');
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{box.style.transition='transform .5s cubic-bezier(.34,1.56,.64,1), opacity .35s ease';box.style.transform='translate(-50%,-50%) scale(1)';box.style.opacity='1';}));
+    }
+  }
+  else if(status==='accepted'){document.getElementById('orderModalTitle').textContent='✅ Заказ қабул қилинди!';document.getElementById('orderModalSub').innerHTML='Официант яқинда сизга келади.<br/>Сизнинг заказингиз рақами:';_setMS('#4caf7d','linear-gradient(135deg,rgba(76,175,125,.2),rgba(76,175,125,.05))','rgba(76,175,125,.5)','#4caf7d','#4caf7d');const b=document.getElementById('orderBubble');if(b.classList.contains('show')){b.classList.remove('cooking');b.classList.add('accepted');document.getElementById('orderBubbleIcon').textContent='✅';}if(!_modalCollapsed)setTimeout(collapseOrderModal,5000);}
+  else if(status==='rejected'){const reason=orderData&&orderData.rejectReason?orderData.rejectReason:'';document.getElementById('orderModalTitle').textContent='❌ Заказ рад этилди';document.getElementById('orderModalSub').innerHTML=(reason?'📝 <b>Сабаб: '+reason+'</b><br/>':'')+'Официантга мурожаат қилинг.<br/>Сизнинг заказингиз рақами:';_setMS('#e05555','linear-gradient(135deg,rgba(224,85,85,.2),rgba(224,85,85,.05))','rgba(224,85,85,.5)','#e05555','#e05555');const b=document.getElementById('orderBubble');if(b.classList.contains('show')){b.classList.remove('cooking');b.classList.add('rejected');document.getElementById('orderBubbleIcon').textContent='❌';}if(!_modalCollapsed)setTimeout(collapseOrderModal,5000);}
 }
 let _orderListener=null;
 function listenOrderStatus(orderId){
   if(_orderListener)_orderListener();
-  try{localStorage.setItem('_activeOrderId',orderId);}catch(e){}
-  const timeout=setTimeout(()=>{
-    if(_orderListener)_orderListener();
-    try{localStorage.removeItem('_activeOrderId');}catch(e){}
-    document.getElementById('orderModalSub').innerHTML='Жавоб йўқ — официантга мурожаат қилинг.<br/>Сизнинг заказингиз рақами:';
-  },15*60*1000);
-  _orderListener=db.collection('orders').doc(orderId).onSnapshot(snap=>{
-    if(!snap.exists)return;
-    const data=snap.data();const status=data.status;
-    if(status==='cooking'){
-      updateOrderModal('cooking',data);
-    }else if(status==='accepted'){
-      clearTimeout(timeout);
-      try{localStorage.removeItem('_activeOrderId');}catch(e){}
-      if(_orderListener){_orderListener();_orderListener=null;}
-      updateOrderModal('accepted',data);
-    }else if(status==='rejected'){
-      clearTimeout(timeout);
-      try{localStorage.removeItem('_activeOrderId');}catch(e){}
-      if(_orderListener){_orderListener();_orderListener=null;}
-      updateOrderModal('rejected',data);
-    }
-  });
-}
-
-function resumeActiveOrder(){
-  try{
-    const savedId=localStorage.getItem('_activeOrderId');
-    if(!savedId)return;
-    db.collection('orders').doc(savedId).get().then(snap=>{
-      if(!snap.exists){localStorage.removeItem('_activeOrderId');return;}
-      const data=snap.data();
-      const status=data.status;
-      if(status==='pending'||status==='cooking'){
-        showOrderModal(savedId,data.orderNum||'?');
-        listenOrderStatus(savedId);
-        if(status==='cooking') setTimeout(()=>updateOrderModal('cooking',data),300);
-      }else{
-        localStorage.removeItem('_activeOrderId');
-      }
-    }).catch(()=>{});
-  }catch(e){}
+  const timeout=setTimeout(()=>{if(_orderListener)_orderListener();document.getElementById('orderModalSub').innerHTML='Жавоб йўқ — официантга мурожаат қилинг.<br/>Сизнинг заказингиз рақами:';},5*60*1000);
+  _orderListener=db.collection('orders').doc(orderId).onSnapshot(snap=>{if(!snap.exists)return;const data=snap.data();const status=data.status;if(status==='cooking'){updateOrderModal('cooking',data);}else if(status==='accepted'){clearTimeout(timeout);if(_orderListener){_orderListener();_orderListener=null;}updateOrderModal('accepted',data);}else if(status==='rejected'){clearTimeout(timeout);if(_orderListener){_orderListener();_orderListener=null;}updateOrderModal('rejected',data);}});
 }
 
 function openQR(){openQRFor(S.currentRestId);}
