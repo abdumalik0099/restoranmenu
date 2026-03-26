@@ -111,12 +111,11 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
 }
 /* Card — pastdan ko'tariladi, tepadan emas */
 @keyframes sk-rise-card{
-  0%  {transform:translateY(60px) scale(.93);opacity:0;}
-  55% {transform:translateY(-10px) scale(1.02);opacity:1;}
-  72% {transform:translateY(6px) scale(.99);}
-  84% {transform:translateY(-4px) scale(1.005);}
-  92% {transform:translateY(2px);}
-  100%{transform:translateY(0) scale(1);opacity:1;}
+  0%  {transform:translateY(-40px);opacity:0;}
+  55% {transform:translateY(8px);opacity:1;}
+  72% {transform:translateY(-4px);}
+  84% {transform:translateY(2px);}
+  100%{transform:translateY(0);opacity:1;}
 }
 
 .sk-hero-wrap{
@@ -150,12 +149,11 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
 }
 /* Card animatsiyasi: tepadan pastga tushadi, eng pastdagilar birinchi, tepaga qarab ketadi */
 @keyframes pm-card-drop{
-  0%  {transform:translateY(-55px) scale(.94);opacity:0;}
-  50% {transform:translateY(12px) scale(1.02);opacity:1;}
-  68% {transform:translateY(-7px) scale(.99);}
-  82% {transform:translateY(4px) scale(1.005);}
-  91% {transform:translateY(-2px);}
-  100%{transform:translateY(0) scale(1);opacity:1;}
+  0%  {transform:translateY(-40px);opacity:0;}
+  55% {transform:translateY(8px);opacity:1;}
+  72% {transform:translateY(-4px);}
+  84% {transform:translateY(2px);}
+  100%{transform:translateY(0);opacity:1;}
 }
 
 .pm-hero-anim{
@@ -261,6 +259,8 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
 .order-bubble.show{transform:scale(1);opacity:1;pointer-events:all;}
 .order-bubble.accepted{border-color:rgba(76,175,125,.6);box-shadow:0 4px 20px rgba(76,175,125,.3);}
 .order-bubble.rejected{border-color:rgba(224,85,85,.6);box-shadow:0 4px 20px rgba(224,85,85,.3);}
+.order-bubble.cooking{border-color:rgba(255,140,66,.6);box-shadow:0 4px 20px rgba(255,140,66,.35);animation:cookingPulse 1.8s ease-in-out infinite;}
+@keyframes cookingPulse{0%,100%{box-shadow:0 4px 20px rgba(255,140,66,.35);}50%{box-shadow:0 4px 28px rgba(255,140,66,.7);}}
 .order-bubble-num{position:absolute;top:-4px;right:-4px;background:var(--accent);color:#000;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:"DM Sans",sans-serif;}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;align-items:center;justify-content:center;padding:1rem;}
 .modal-overlay.show{display:flex;}
@@ -1135,10 +1135,11 @@ function collapseOrderModal(){
   setTimeout(()=>{
     box.style.transition='none';box.style.transform='translate(-50%,-50%) scale(0.7)';box.style.opacity='0';box.style.borderRadius='22px';
     const bubble=document.getElementById('orderBubble');
-    bubble.classList.remove('accepted','rejected');
+    bubble.classList.remove('accepted','rejected','cooking');
     if(_curOrderStatus==='accepted')bubble.classList.add('accepted');
     if(_curOrderStatus==='rejected')bubble.classList.add('rejected');
-    document.getElementById('orderBubbleIcon').textContent=_curOrderStatus==='accepted'?'✅':_curOrderStatus==='rejected'?'❌':'🛒';
+    if(_curOrderStatus==='cooking')bubble.classList.add('cooking');
+    document.getElementById('orderBubbleIcon').textContent=_curOrderStatus==='accepted'?'✅':_curOrderStatus==='rejected'?'❌':_curOrderStatus==='cooking'?'🍳':'🛒';
     bubble.classList.add('show');
   },580);
 }
@@ -1152,14 +1153,21 @@ function expandOrderModal(){
 function onOrderOverlayClick(e){if(e.target===document.getElementById('orderModalOverlay'))collapseOrderModal();}
 function updateOrderModal(status,orderData){
   _curOrderStatus=status;
-  if(status==='accepted'){document.getElementById('orderModalTitle').textContent='✅ Заказ қабул қилинди!';document.getElementById('orderModalSub').innerHTML='Официант яқинда сизга келади.<br/>Сизнинг заказингиз рақами:';_setMS('#4caf7d','linear-gradient(135deg,rgba(76,175,125,.2),rgba(76,175,125,.05))','rgba(76,175,125,.5)','#4caf7d','#4caf7d');const b=document.getElementById('orderBubble');if(b.classList.contains('show')){b.classList.add('accepted');document.getElementById('orderBubbleIcon').textContent='✅';}if(!_modalCollapsed)setTimeout(collapseOrderModal,5000);}
-  else if(status==='rejected'){const reason=orderData&&orderData.rejectReason?orderData.rejectReason:'';document.getElementById('orderModalTitle').textContent='❌ Заказ рад этилди';document.getElementById('orderModalSub').innerHTML=(reason?'📝 <b>Сабаб: '+reason+'</b><br/>':'')+'Официантга мурожаат қилинг.<br/>Сизнинг заказингиз рақами:';_setMS('#e05555','linear-gradient(135deg,rgba(224,85,85,.2),rgba(224,85,85,.05))','rgba(224,85,85,.5)','#e05555','#e05555');const b=document.getElementById('orderBubble');if(b.classList.contains('show')){b.classList.add('rejected');document.getElementById('orderBubbleIcon').textContent='❌';}if(!_modalCollapsed)setTimeout(collapseOrderModal,5000);}
+  if(status==='cooking'){
+    document.getElementById('orderModalTitle').textContent='🍳 Таом тайёрланмоқда!';
+    document.getElementById('orderModalSub').innerHTML='Ошпаз сизнинг таомингизни тайёрламоқда.<br/>Сизнинг заказингиз рақами:';
+    _setMS('#ff8c42','linear-gradient(135deg,rgba(255,140,66,.2),rgba(255,140,66,.05))','rgba(255,140,66,.5)','#ff8c42','#ff8c42');
+    const b=document.getElementById('orderBubble');
+    if(b.classList.contains('show')){b.classList.remove('accepted','rejected');b.classList.add('cooking');document.getElementById('orderBubbleIcon').textContent='🍳';}
+  }
+  else if(status==='accepted'){document.getElementById('orderModalTitle').textContent='✅ Заказ қабул қилинди!';document.getElementById('orderModalSub').innerHTML='Официант яқинда сизга келади.<br/>Сизнинг заказингиз рақами:';_setMS('#4caf7d','linear-gradient(135deg,rgba(76,175,125,.2),rgba(76,175,125,.05))','rgba(76,175,125,.5)','#4caf7d','#4caf7d');const b=document.getElementById('orderBubble');if(b.classList.contains('show')){b.classList.remove('cooking');b.classList.add('accepted');document.getElementById('orderBubbleIcon').textContent='✅';}if(!_modalCollapsed)setTimeout(collapseOrderModal,5000);}
+  else if(status==='rejected'){const reason=orderData&&orderData.rejectReason?orderData.rejectReason:'';document.getElementById('orderModalTitle').textContent='❌ Заказ рад этилди';document.getElementById('orderModalSub').innerHTML=(reason?'📝 <b>Сабаб: '+reason+'</b><br/>':'')+'Официантга мурожаат қилинг.<br/>Сизнинг заказингиз рақами:';_setMS('#e05555','linear-gradient(135deg,rgba(224,85,85,.2),rgba(224,85,85,.05))','rgba(224,85,85,.5)','#e05555','#e05555');const b=document.getElementById('orderBubble');if(b.classList.contains('show')){b.classList.remove('cooking');b.classList.add('rejected');document.getElementById('orderBubbleIcon').textContent='❌';}if(!_modalCollapsed)setTimeout(collapseOrderModal,5000);}
 }
 let _orderListener=null;
 function listenOrderStatus(orderId){
   if(_orderListener)_orderListener();
   const timeout=setTimeout(()=>{if(_orderListener)_orderListener();document.getElementById('orderModalSub').innerHTML='Жавоб йўқ — официантга мурожаат қилинг.<br/>Сизнинг заказингиз рақами:';},5*60*1000);
-  _orderListener=db.collection('orders').doc(orderId).onSnapshot(snap=>{if(!snap.exists)return;const data=snap.data();const status=data.status;if(status==='accepted'){clearTimeout(timeout);if(_orderListener){_orderListener();_orderListener=null;}updateOrderModal('accepted',data);}else if(status==='rejected'){clearTimeout(timeout);if(_orderListener){_orderListener();_orderListener=null;}updateOrderModal('rejected',data);}});
+  _orderListener=db.collection('orders').doc(orderId).onSnapshot(snap=>{if(!snap.exists)return;const data=snap.data();const status=data.status;if(status==='cooking'){updateOrderModal('cooking',data);}else if(status==='accepted'){clearTimeout(timeout);if(_orderListener){_orderListener();_orderListener=null;}updateOrderModal('accepted',data);}else if(status==='rejected'){clearTimeout(timeout);if(_orderListener){_orderListener();_orderListener=null;}updateOrderModal('rejected',data);}});
 }
 
 function openQR(){openQRFor(S.currentRestId);}
