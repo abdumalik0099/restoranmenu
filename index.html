@@ -1148,7 +1148,7 @@ async function sendOrder(){
       const saved=JSON.parse(existingSaved);
       if(Date.now()-saved.savedAt<2*60*60*1000){
         const existDoc=await db.collection('orders').doc(saved.orderId).get();
-        if(existDoc.exists && (existDoc.data().status==='pending'||existDoc.data().status==='cooking')){
+        if(existDoc.exists && ['pending','cooking','accepted'].includes(existDoc.data().status) && !existDoc.data().paid){
           // ══ ESKI ZAKAZGA QO'SHISH ══
           const existing=existDoc.data();
           const now=Date.now();
