@@ -223,7 +223,7 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
 .phone-input-wrap input{padding-left:40px;}
 .order-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9500;display:flex;align-items:center;justify-content:center;padding:1.5rem;opacity:0;pointer-events:none;transition:opacity .35s ease;}
 .order-modal-overlay.show{opacity:1;pointer-events:all;}
-.order-modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:22px;padding:2rem 1.8rem;width:100%;max-width:360px;text-align:center;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(1);transition:transform .45s cubic-bezier(.34,1.56,.64,1),opacity .35s;box-shadow:0 24px 64px rgba(0,0,0,.6);}
+.order-modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:22px;padding:2rem 1.8rem;width:100%;max-width:360px;max-height:85vh;overflow-y:auto;text-align:center;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(1);transition:transform .45s cubic-bezier(.34,1.56,.64,1),opacity .35s;box-shadow:0 24px 64px rgba(0,0,0,.6);}
 .order-num-badge{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,rgba(232,160,69,.2),rgba(232,160,69,.05));border:2px solid rgba(232,160,69,.4);font-family:"Playfair Display",serif;font-size:1.8rem;font-weight:900;color:var(--accent);margin:0 auto 1rem;}
 .order-modal-title{font-family:"Playfair Display",serif;font-size:1.3rem;font-weight:700;margin-bottom:.5rem;}
 .order-modal-sub{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:1.4rem;}
@@ -510,7 +510,16 @@ textarea{resize:none;height:72px;}select option{background:#1a1a1a;}
     <div class="order-num-badge" id="orderNumBadge">1</div>
     <div class="order-modal-title" id="orderModalTitle">Заказ юборилди!</div>
     <div class="order-modal-sub" id="orderModalSub">Оператор сиз билан боғланишини кутинг.<br/>Сизнинг заказингиз рақами:</div>
-    <div style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;color:var(--accent);margin-bottom:1.4rem;" id="orderModalNum">#1</div>
+    <div style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;color:var(--accent);margin-bottom:1rem;" id="orderModalNum">#1</div>
+    <!-- Zakaz tafsilotlari (bubble bosilganda ko'rinadi) -->
+    <div id="orderModalDetails" style="display:none;width:100%;margin-bottom:1.2rem;text-align:left;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;">
+      <div style="padding:10px 14px 4px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid rgba(255,255,255,.06);">📋 Заказингиз</div>
+      <div id="orderModalItems" style="padding:8px 14px;"></div>
+      <div style="padding:8px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:var(--muted);">Jami</span>
+        <span id="orderModalTotal" style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--accent);">0 сум</span>
+      </div>
+    </div>
     <button class="order-modal-close" onclick="collapseOrderModal()">Ёпиш</button>
   </div>
 </div>
@@ -1252,6 +1261,8 @@ function showOrderModal(orderId,orderNum){
   box.style.transition='none';box.style.transform='translate(-50%,-50%) scale(0.7)';box.style.opacity='0';box.style.borderRadius='22px';box.style.left='50%';box.style.top='50%';
   overlay.classList.add('show');
   requestAnimationFrame(()=>requestAnimationFrame(()=>{box.style.transition='transform .5s cubic-bezier(.34,1.56,.64,1), opacity .35s ease';box.style.transform='translate(-50%,-50%) scale(1)';box.style.opacity='1';}));
+  // Zakaz tafsilotlarini ko'rsat
+  _loadOrderDetails();
 }
 function collapseOrderModal(){
   if(_modalCollapsed)return;_modalCollapsed=true;
@@ -1273,11 +1284,50 @@ function collapseOrderModal(){
   },580);
 }
 function expandOrderModal(){
-  _modalCollapsed=false;document.getElementById('orderBubble').classList.remove('show');
+  _modalCollapsed=false;
+  document.getElementById('orderBubble').classList.remove('show');
   const overlay=document.getElementById('orderModalOverlay');const box=document.getElementById('orderModalBox');
   box.style.transition='none';box.style.transform='translate(-50%,-50%) scale(0.7)';box.style.opacity='0';box.style.borderRadius='22px';
   overlay.classList.add('show');
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{box.style.transition='transform .5s cubic-bezier(.34,1.56,.64,1), opacity .35s ease';box.style.transform='translate(-50%,-50%) scale(1)';box.style.opacity='1';}));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    box.style.transition='transform .5s cubic-bezier(.34,1.56,.64,1), opacity .35s ease';
+    box.style.transform='translate(-50%,-50%) scale(1)';box.style.opacity='1';
+  }));
+  // Zakaz tafsilotlarini ko'rsat
+  _loadOrderDetails();
+}
+
+// Aktiv zakazning blюdlari va summasi
+async function _loadOrderDetails(){
+  const raw=localStorage.getItem('mp_active_order');
+  if(!raw)return;
+  try{
+    const saved=JSON.parse(raw);
+    const doc=await db.collection('orders').doc(saved.orderId).get();
+    if(!doc.exists)return;
+    const data=doc.data();
+    const items=data.items||[];
+    const unit=data.unit||'сум';
+
+    const detailsEl=document.getElementById('orderModalDetails');
+    const itemsEl=document.getElementById('orderModalItems');
+    const totalEl=document.getElementById('orderModalTotal');
+
+    if(!items.length){detailsEl.style.display='none';return;}
+
+    itemsEl.innerHTML=items.map(i=>{
+      const p=parseInt(String(i.price||'').replace(/\D/g,''))||0;
+      const tot=p*i.qty;
+      return`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;">
+        <span style="color:var(--text);flex:1;">${i.name}</span>
+        <span style="color:var(--muted);margin:0 8px;">×${i.qty}</span>
+        ${tot?`<span style="color:var(--accent);font-weight:600;">${tot.toLocaleString('ru-RU')} ${i.unit||unit}</span>`:''}
+      </div>`;
+    }).join('');
+
+    totalEl.textContent=(data.total||0).toLocaleString('ru-RU')+' '+unit;
+    detailsEl.style.display='block';
+  }catch(e){console.log('loadOrderDetails:',e);}
 }
 function onOrderOverlayClick(e){if(e.target===document.getElementById('orderModalOverlay'))collapseOrderModal();}
 function updateOrderModal(status,orderData){

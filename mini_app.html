@@ -261,7 +261,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-
 
   <div id="statsPage">
     <div class="stats-title">📊 Statistika</div>
-    <button class="clear-btn" onclick="clearHiddenOrders()">🗑 Yashirilgan zakazlarni tozalash</button>
     <div class="big-stat-grid">
       <div class="big-stat"><div class="big-stat-label">📅 BUGUN</div>        <div class="big-stat-num" style="color:var(--blue)"    id="stToday">0</div></div>
       <div class="big-stat"><div class="big-stat-label">⏳ KUTISH</div>       <div class="big-stat-num" style="color:var(--pending)" id="stPending">0</div></div>
@@ -585,7 +584,7 @@ function buildOrderCard(order,idx){
   const cookingHtml=order.status==='cooking'
     ?`<div class="cooking-timer"><span class="timer-anim">🍳</span> Tayyorlanmoqda...</div>`:'';
 
-  // ══ TUGMALAR — tartibli 2 qator ══
+  // ══ TUGMALAR ══
   let actionsHtml='';
   if(order.status==='pending'){
     actionsHtml=`<div class="card-actions">
@@ -611,9 +610,21 @@ function buildOrderCard(order,idx){
       </div>
     </div>`;
   }else{
+    // accepted / rejected
+    // To'landi bosilmaguncha Yashirish disabled
+    const isPaid=!!order.paid;
     actionsHtml=`<div class="card-actions">
       <div class="actions-row">
-        <button class="act-btn btn-hide" onclick="hideOrder('${order.id}')">👁 Yashirish</button>
+        <button class="act-btn ${isPaid?'btn-hide':'btn-paid'}"
+          style="${isPaid?'opacity:.4;cursor:not-allowed;':'background:rgba(76,175,125,.12);color:#3dd68c;border:1px solid rgba(76,175,125,.3);'}"
+          onclick="${isPaid?'':'markPaid(\''+order.id+'\')'}">
+          💰 ${isPaid?"To'landi ✓":"To'landi"}
+        </button>
+        <button class="act-btn btn-hide icon-only"
+          style="${isPaid?'':'opacity:.4;cursor:not-allowed;'}"
+          onclick="${isPaid?'hideOrder(\''+order.id+'\')':''}">
+          👁
+        </button>
       </div>
     </div>`;
   }
@@ -704,11 +715,52 @@ async function acceptOrder(orderId){
   }catch(e){toast('Xato: '+e.message);}
 }
 
-// 👁 Yashirish — Firebase da saqlanib qoladi (statistika uchun)
+// 💰 To'landi
+async function markPaid(orderId){
+  try{
+    await db.collection('orders').doc(orderId).update({
+      paid:true,
+      paidAt:Date.now()
+    });
+    toast('💰 To\'landi deb belgilandi!');
+    try{tg?.HapticFeedback?.impactOccurred('light');}catch(e){}
+  }catch(e){toast('Xato: '+e.message);}
+}
+
+// 👁 Yashirish — faqat to'langanidan keyin; statistikadan o'chmaydi; Telegram ga ham xabar
 async function hideOrder(orderId){
   try{
-    await db.collection('orders').doc(orderId).update({hiddenInApp:true});
-    toast('Zakaz yashirildi');
+    const doc=await db.collection('orders').doc(orderId).get();
+    if(!doc.exists)return;
+    const data=doc.data();
+
+    // To'langanligini tekshir
+    if(!data.paid && (data.status==='accepted'||data.status==='rejected')){
+      toast('⚠️ Avval "To\'landi" tugmasini bosing!');
+      try{tg?.HapticFeedback?.notificationOccurred('error');}catch(e){}
+      return;
+    }
+
+    // hiddenInApp=true — ro'yxatdan olinadi lekin statistika saqlanadi
+    await db.collection('orders').doc(orderId).update({
+      hiddenInApp:true,
+      hiddenAt:Date.now()
+    });
+
+    // Telegram ga xabar
+    const r=S.restaurant;
+    if(r&&r.tgToken&&r.tgChatId){
+      const unit=data.unit||'сум';
+      const text=`👁 <b>Zakaz yashirildi</b>  #${data.orderNum||'?'}\n\n🏪 ${r.name}\n📞 ${data.phone||'—'}\n💰 ${data.total?Number(data.total).toLocaleString('ru-RU')+' '+unit:'—'}\n\n✅ To\'landi: ${data.paid?'Ha':'Yo\'q'}\n🕐 ${new Date().toLocaleString('ru-RU')}`;
+      try{
+        await fetch(`https://api.telegram.org/bot${r.tgToken}/sendMessage`,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({chat_id:String(r.tgChatId),text,parse_mode:'HTML'})
+        });
+      }catch(e){}
+    }
+
+    toast('Zakaz yashirildi (statistikada saqlanadi)');
   }catch(e){toast('Xato: '+e.message);}
 }
 
