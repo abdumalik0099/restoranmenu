@@ -426,27 +426,23 @@ function startOrdersListener(){
       const newOrders=snap.docs.map(d=>({id:d.id,...d.data()})).filter(o=>!o.hiddenInApp);
 
       // ══ YANGI QO'SHILGAN BLЮDLARNI ANIQLASH ══
-      // updatedAt bo'lgan va bizda saqlangan versiyadan yangi bo'lsa
+      // Firebase dan lastAddedAt ni tekshiramiz — oldingi qiymatdan katta bo'lsa popup
       newOrders.forEach(o=>{
-        if(!o.updatedAt)return; // hech qachon yangilanmagan
-        const prev=S.orderVersions[o.id];
-        if(prev && o.updatedAt>prev){
-          // Qaysi blюdlar qo'shildi — topish
-          const prevOrder=S.orders.find(x=>x.id===o.id);
-          if(prevOrder){
-            const addedItems=[];
-            o.items.forEach(ni=>{
-              const old=prevOrder.items.find(ei=>ei.name===ni.name);
-              const addedQty=old?ni.qty-old.qty:ni.qty;
-              if(addedQty>0)addedItems.push({...ni,qty:addedQty});
-            });
-            if(addedItems.length>0){
-              showNewItemsPopup(addedItems,o.total||0,o.unit||'сум');
-            }
-          }
+        if(!o.lastAddedAt||!o.lastAddedItems?.length) return;
+        const prevAt=S.orderVersions[o.id]||0;
+        if(o.lastAddedAt > prevAt && prevAt > 0){
+          // Yangi qo'shildi — popup ko'rsat
+          showNewItemsPopup(o.lastAddedItems, o.total||0, o.unit||'сум');
         }
-        // Versiyani saqlash
-        S.orderVersions[o.id]=o.updatedAt||o.createdAt||0;
+        // Har doim yangilanmoqda bo'lgan lastAddedAt ni saqlash
+        S.orderVersions[o.id]=Math.max(o.lastAddedAt, S.orderVersions[o.id]||0);
+      });
+
+      // Yangi kelgan zakazlar uchun versiya boshlash (birinchi yuklash)
+      newOrders.forEach(o=>{
+        if(!(o.id in S.orderVersions)){
+          S.orderVersions[o.id]=o.lastAddedAt||o.createdAt||Date.now();
+        }
       });
 
       S.orders=newOrders;
@@ -494,8 +490,11 @@ function updateUI(){
 /* ─── RENDER ORDERS ─── */
 function renderOrders(){
   const el=document.getElementById('ordersList');
-  let list=[...S.orders].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+
+  // Tartiblash: yangi zakazlar PASTDAN — createdAt bo'yicha o'sish (eski tepada, yangi pastda)
+  let list=[...S.orders].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
   if(S.currentTab!=='all')list=list.filter(o=>o.status===S.currentTab);
+
   if(!list.length){
     const labels={
       all:"Zakazlar yo'q",pending:"Kutilayotgan yo'q",
@@ -504,8 +503,51 @@ function renderOrders(){
     el.innerHTML=`<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">${labels[S.currentTab]||"Yo'q"}</div></div>`;
     return;
   }
+
   el.innerHTML='';
-  list.forEach((order,i)=>el.appendChild(buildOrderCard(order,i)));
+  list.forEach((order,i)=>{
+    // Asosiy card
+    el.appendChild(buildOrderCard(order,i));
+    // Agar qo'shilgan blюdlar bo'lsa — pastdan alohida "QUSHILDI" card
+    if(order.lastAddedItems&&order.lastAddedItems.length>0){
+      el.appendChild(buildAddedCard(order));
+    }
+  });
+
+  // Scroll to bottom — yangi zakazlar pastda
+  setTimeout(()=>{
+    const wrap=document.querySelector('.orders-wrap');
+    if(wrap) wrap.scrollTop=wrap.scrollHeight;
+  },60);
+}
+
+/* ─── QUSHILDI CARD (alohida, pastdan) ─── */
+function buildAddedCard(order){
+  const card=document.createElement('div');
+  const unit=order.unit||'сум';
+  const items=order.lastAddedItems||[];
+  card.style.cssText='background:rgba(232,160,69,.06);border:1px solid rgba(232,160,69,.25);border-radius:14px;margin-bottom:10px;margin-top:-6px;padding:10px 14px;animation:cardIn .35s cubic-bezier(.22,1,.36,1) both;';
+
+  const itemsHtml=items.map(i=>{
+    const p=parseInt(String(i.price||'').replace(/\D/g,''))||0;
+    return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid rgba(232,160,69,.1);">
+      <span style="color:var(--text);">➕ ${i.name}</span>
+      <span style="color:var(--accent);">×${i.qty}${p?' &nbsp;'+fmtNum(p*i.qty)+' '+(i.unit||unit):''}</span>
+    </div>`;
+  }).join('');
+
+  card.innerHTML=`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:ldp 1.2s ease-in-out infinite;"></div>
+      <span style="font-size:11px;color:var(--accent);font-weight:700;">➕ QUSHILDI — #${order.orderNum}</span>
+      <span style="font-size:10px;color:var(--muted);margin-left:auto;">${fmtTime(order.lastAddedAt)}</span>
+    </div>
+    ${itemsHtml}
+    <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:1px solid rgba(232,160,69,.15);">
+      <span style="font-size:11px;color:var(--muted);">Yangi jami</span>
+      <span style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;color:var(--accent);">${fmtNum(order.total)} ${unit}</span>
+    </div>`;
+  return card;
 }
 
 /* ─── BUILD ORDER CARD ─── */
@@ -521,26 +563,22 @@ function buildOrderCard(order,idx){
 
   const items=order.items||[];
   const unit=order.unit||'сум';
-  const hasAddition=!!order.updatedAt;
 
-  // Blюdlar ro'yxati — yangi qo'shilganlarni highlight qilish
-  // updatedAt bo'lsa, oxirgi qo'shilganlarni aniqlashga harakat
+  // Asosiy blюdlar — hammasi, lastAddedNames highlight qilinadi
+  const lastAdded=order.lastAddedItems||[];
+  const lastAddedNames=new Set(lastAdded.map(i=>i.name));
+
   let itemsHtml='';
   items.forEach(it=>{
     const qty=it.qty||1;
     const rawP=parseInt(String(it.price||'').replace(/\D/g,''))||0;
     const tot=rawP*qty;
-    // Yangi — it.addedAt bo'lsa yoki order yangilangan
-    const isNew=it.isNew||false;
-    itemsHtml+=`<div class="item-row${isNew?' item-new':''}">
+    itemsHtml+=`<div class="item-row">
       <span class="item-name">${it.name||'—'}</span>
       <span class="item-qty">×${qty}</span>
       ${tot?`<span class="item-price">${fmtNum(tot)} ${it.unit||unit}</span>`:''}
     </div>`;
   });
-
-  // Yangi qo'shildi banner
-  const addedBanner=hasAddition?`<div class="added-banner"><div class="added-dot"></div>Zakaz yangilandi (blюd qo'shildi)</div>`:'';
 
   const reasonHtml=order.status==='rejected'&&order.rejectReason
     ?`<div class="reject-reason-tag">❌ ${order.rejectReason}</div>`:'';
@@ -550,8 +588,6 @@ function buildOrderCard(order,idx){
   // ══ TUGMALAR — tartibli 2 qator ══
   let actionsHtml='';
   if(order.status==='pending'){
-    // Qator 1: Tayyorlash | Qabul
-    // Qator 2: Rad | 📞 | 👁
     actionsHtml=`<div class="card-actions">
       <div class="actions-row">
         <button class="act-btn btn-cook"   onclick="startCooking('${order.id}')">🍳 Tayyorlash</button>
@@ -564,8 +600,6 @@ function buildOrderCard(order,idx){
       </div>
     </div>`;
   }else if(order.status==='cooking'){
-    // Qator 1: Tayyor bo'ldi (katta)
-    // Qator 2: Rad | 📞 | 👁
     actionsHtml=`<div class="card-actions">
       <div class="actions-row">
         <button class="act-btn btn-accept" onclick="acceptOrder('${order.id}')">✅ Tayyor bo'ldi</button>
@@ -577,7 +611,6 @@ function buildOrderCard(order,idx){
       </div>
     </div>`;
   }else{
-    // Accepted/rejected — faqat yashirish
     actionsHtml=`<div class="card-actions">
       <div class="actions-row">
         <button class="act-btn btn-hide" onclick="hideOrder('${order.id}')">👁 Yashirish</button>
@@ -592,7 +625,6 @@ function buildOrderCard(order,idx){
     </div>
     <div class="card-body">
       <div class="order-phone">📞 <span>${order.phone||'—'}</span></div>
-      ${addedBanner}
       <div class="order-items">${itemsHtml||'<div class="empty-text">—</div>'}</div>
       ${reasonHtml}${cookingHtml}
       <div class="order-footer">

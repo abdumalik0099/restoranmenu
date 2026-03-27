@@ -743,23 +743,23 @@ async function restoreActiveOrder(){
 
     S.currentPublicRestId=restId;
 
-    // URL orqali kirgan bo'lsa (isPublicView=true) — menu allaqachon ochiq
+    // URL orqali kirgan bo'lsa — menu allaqachon ochiq, faqat bubble tiklash
     if(S.isPublicView){
       _restoreOrderBubble(orderId,orderNum,data.status);
       if(data.status==='pending'||data.status==='cooking') listenOrderStatus(orderId);
       return;
     }
 
-    // Restoran topilsa — public menu ochish
-    const r=S.restaurants.find(x=>x.id===restId);
-    if(r){
-      S.currentRestId=restId;
-      S.isPublicView=true;
-      // Menu to'liq yuklanishini kut
-      await showPublicMenuFor(r);
+    // ══ MUHIM: Admin/boshqa sahifada bo'lsa — menuni OCHMAYDI ══
+    // Faqat bubble ko'rsatadi. Klient menuga o'tganda yoki QR scan qilganda ko'rinadi.
+    // publicMenu allaqachon ochiq bo'lsa — faqat content yangilash
+    const pm=document.getElementById('publicMenu');
+    if(pm.classList.contains('show')){
+      // Menu ochiq — content yangilash, bubble ko'rsat
+      const r=S.restaurants.find(x=>x.id===restId);
+      if(r) renderPMContent(r,null);
     }
-
-    // Bubble ko'rsat
+    // Har doim bubble ko'rsat (menu ochiq bo'lsin/bo'lmasin)
     _restoreOrderBubble(orderId,orderNum,data.status);
 
     // Hali jarayonda — eshitishni davom ettir
@@ -846,9 +846,54 @@ function loadData(){
   },err=>{console.error(err);setLoader(false);toast('Ошибка подключения');});
 }
 function setLoader(show,msg){const el=document.getElementById('appLoader');if(msg)document.getElementById('loaderMsg').textContent=msg;if(show){el.classList.remove('hide');el.style.display='flex';}else{el.classList.add('hide');setTimeout(()=>el.style.display='none',400);}}
-function refreshUI(){const a=document.querySelector('.page.active');if(a&&a.id==='page-menu'){if(document.getElementById('menuEditor').classList.contains('active')&&S.currentRestId){const r=S.restaurants.find(x=>x.id===S.currentRestId);if(r)renderEditor(r);}else renderMenuList();}if(a&&a.id==='page-admin')renderAdmin();const pm=document.getElementById('publicMenu');if(pm.classList.contains('show')&&S.currentPublicRestId){const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);if(r)showPublicMenuFor(r);}}
+function refreshUI(){
+  const a=document.querySelector('.page.active');
+  if(a&&a.id==='page-menu'){
+    if(document.getElementById('menuEditor').classList.contains('active')&&S.currentRestId){
+      const r=S.restaurants.find(x=>x.id===S.currentRestId);
+      if(r)renderEditor(r);
+    }else{
+      renderMenuList();
+    }
+  }
+  if(a&&a.id==='page-admin')renderAdmin();
+  // Public menu faqat allaqachon ochiq bo'lsa content ni yangilash (sahifani o'zgartirmasdan)
+  const pm=document.getElementById('publicMenu');
+  if(pm.classList.contains('show')&&S.currentPublicRestId){
+    const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);
+    if(r){
+      // Faqat content ni yangilash — skeleton + skeleton animation qayta ishga tushirmasdan
+      const ac=document.querySelector('.pm-cat.active');
+      renderPMContent(r,ac&&ac.textContent!=='Все'?ac.textContent:null);
+    }
+  }
+}
 
-function showPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+n).classList.add('active');const idx={landing:0,menu:1,admin:2};if(idx[n]!==undefined)document.querySelectorAll('.nav-tab')[idx[n]].classList.add('active');if(n==='menu')renderMenuList();if(n==='admin')renderAdmin();}
+function showPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  const idx={landing:0,menu:1,admin:2};
+  if(idx[n]!==undefined)document.querySelectorAll('.nav-tab')[idx[n]].classList.add('active');
+  if(n==='menu'){
+    document.getElementById('menuListView').style.display='block';
+    document.getElementById('menuEditor').classList.remove('active');
+    renderMenuList();
+  }
+  if(n==='admin')renderAdmin();
+  // Admin yoki landing ga o'tganda — agar public menu ochiq bo'lsa yopish
+  // (faqat isPublicView=false bo'lganda, ya'ni admin ochgan preview bo'lsa)
+  if(n!=='menu'){
+    const pm=document.getElementById('publicMenu');
+    if(pm.classList.contains('show')&&!S.isPublicView){
+      // Admin preview edi — yopish
+      pm.classList.remove('show');
+      document.getElementById('pmSkeleton').style.display='none';
+      document.getElementById('pmReal').style.display='none';
+      S.cart={};updateCartUI();
+    }
+  }
+}
 
 let _masterCb=null;
 function requireMaster(cb){if(S.masterUnlocked){cb();return;}_masterCb=cb;document.getElementById('masterInput').value='';document.getElementById('masterErr').textContent='';document.getElementById('masterGate').classList.add('show');setTimeout(()=>document.getElementById('masterInput').focus(),80);}
@@ -1097,11 +1142,14 @@ async function sendOrder(){
         if(existDoc.exists && (existDoc.data().status==='pending'||existDoc.data().status==='cooking')){
           // ══ ESKI ZAKAZGA QO'SHISH ══
           const existing=existDoc.data();
-          const mergedItems=[...existing.items];
+          const now=Date.now();
+          const mergedItems=[...existing.items.map(i=>({...i,isNew:false}))];
+          const addedItems=[];
           newItems.forEach(ni=>{
             const found=mergedItems.find(ei=>ei.name===ni.name);
-            if(found) found.qty+=ni.qty;
-            else mergedItems.push(ni);
+            if(found){found.qty+=ni.qty;found.isNew=true;}
+            else{mergedItems.push({...ni,isNew:true});}
+            addedItems.push({...ni});
           });
           const newTotal=(existing.total||0)+total;
           let addLines='';newItems.forEach(i=>{const p=parsePrice(i.price);addLines+='  ➕ '+i.name+' × '+i.qty+(p?' = '+formatPrice(p*i.qty,unit):'')+'\n';});
@@ -1109,7 +1157,10 @@ async function sendOrder(){
           await db.collection('orders').doc(saved.orderId).update({
             items:mergedItems,
             total:newTotal,
-            updatedAt:Date.now()
+            updatedAt:Date.now(),
+            // Oxirgi qo'shilgan blюdlar — Mini App uchun
+            lastAddedItems:newItems,
+            lastAddedAt:Date.now()
           });
 
           // Telegram ga bildirishnoma
@@ -1365,8 +1416,20 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function openDevPanel(){requireMaster(()=>{document.getElementById('devPanel').classList.add('show');devTab(1);setTimeout(()=>{['rn-name','rn-addr','rn-phone','rn-pw','rn-pw2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const rnErr=document.getElementById('rn-err');if(rnErr)rnErr.textContent='';[1,2,3,4].forEach(i=>{const b=document.getElementById('rn-b'+i);if(b)b.className='pw-bar';});const plbl=document.getElementById('rn-plbl');if(plbl)plbl.textContent='';['cm-old','cm-new','cm-new2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const cmErr=document.getElementById('cm-err');if(cmErr)cmErr.textContent='';},50);}); }
 function devTab(n){[1,2,3].forEach(i=>{document.getElementById('dtp'+i).style.display=i===n?'block':'none';const btn=document.getElementById('dt'+i);if(btn)btn.className=i===n?'dev-tab-btn active':'dev-tab-btn';});if(n===3)loadDevStats();else stopStatsListeners();}
 
-function renderAdmin(){const el=document.getElementById('adminRestList');el.innerHTML='';if(!S.restaurants.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">Заведений нет. Панель разработчика орқали қўшинг.</div>';return;}S.restaurants.forEach(r=>{const locked=!S.unlockedRests.has(r.id),frozen=r.frozen||false;const d=document.createElement('div');d.className='restaurant-item';d.innerHTML='<div><div class="restaurant-name">'+r.name+' <span style="font-size:10px;opacity:.4;">'+(locked?'🔒':'🔓')+'</span>'+(frozen?'<span style="font-size:10px;color:#64a0ff;margin-left:4px;">❄️</span>':'')+'</div><div class="restaurant-meta">'+(r.type||'')+' · '+((r.dishes||[]).length)+' блюд · '+(r.phone||'—')+'</div></div><div class="restaurant-actions"><span class="badge '+(frozen?'badge-frozen':'badge-green')+'" style="cursor:pointer;" onclick="requireMaster(()=>toggleFreeze(\''+r.id+'\'))">'+(frozen?'❄️ Заморожено':'✅ Активно')+'</span><button class="btn btn-outline btn-sm" onclick="showPage(\'menu\');tryOpenEditor(\''+r.id+'\')">Управлять</button><button class="btn btn-danger btn-sm" onclick="tryDeleteRestaurant(\''+r.id+'\')">Удалить</button></div>';el.appendChild(d);});}
+function renderAdmin(){const el=document.getElementById('adminRestList');el.innerHTML='';if(!S.restaurants.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">Заведений нет. Панель разработчика орқали қўшинг.</div>';return;}S.restaurants.forEach(r=>{const locked=!S.unlockedRests.has(r.id),frozen=r.frozen||false;const d=document.createElement('div');d.className='restaurant-item';d.innerHTML='<div><div class="restaurant-name">'+r.name+' <span style="font-size:10px;opacity:.4;">'+(locked?'🔒':'🔓')+'</span>'+(frozen?'<span style="font-size:10px;color:#64a0ff;margin-left:4px;">❄️</span>':'')+'</div><div class="restaurant-meta">'+(r.type||'')+' · '+((r.dishes||[]).length)+' блюд · '+(r.phone||'—')+'</div></div><div class="restaurant-actions"><span class="badge '+(frozen?'badge-frozen':'badge-green')+'" style="cursor:pointer;" onclick="requireMaster(()=>toggleFreeze(\''+r.id+'\'))">'+(frozen?'❄️ Заморожено':'✅ Активно')+'</span><button class="btn btn-outline btn-sm" onclick="goToEditor(\''+r.id+'\')">Управлять</button><button class="btn btn-danger btn-sm" onclick="tryDeleteRestaurant(\''+r.id+'\')">Удалить</button></div>';el.appendChild(d);});}
 
+// Admin sahifadan to'g'ri Меню+Editor ga o'tish
+function goToEditor(id){
+  // Avval Меню sahifasiga o'tamiz (menuListView ko'rinadi)
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-menu').classList.add('active');
+  document.querySelectorAll('.nav-tab')[1].classList.add('active');
+  document.getElementById('menuListView').style.display='block';
+  document.getElementById('menuEditor').classList.remove('active');
+  // Keyin editor ni ochish (parol tekshiruvi bilan)
+  requireRestPw(id,()=>openEditor(id));
+}
 let _statsListeners=[];
 function stopStatsListeners(){_statsListeners.forEach(fn=>fn());_statsListeners=[];}
 
