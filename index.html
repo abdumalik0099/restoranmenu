@@ -872,8 +872,7 @@ function refreshUI(){
     const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);
     if(r){
       // Faqat content ni yangilash — skeleton + skeleton animation qayta ishga tushirmasdan
-      const ac=document.querySelector('.pm-cat.active');
-      renderPMContent(r,ac&&ac.textContent!=='Все'?ac.textContent:null);
+      renderPMContent(r,null);
     }
   }
 }
@@ -1129,83 +1128,129 @@ function backToCart(){document.getElementById('phoneStep').classList.remove('sho
 async function sendOrder(){
   const phone=document.getElementById('phoneInput').value.trim();
   const phoneDigits=phone.replace(/\D/g,'');
-  if(!phone.startsWith('+998')){document.getElementById('phoneErr').textContent='❌ Рақам +998 билан бошланиши керак';return;}
-  if(phoneDigits.length!==12){document.getElementById('phoneErr').textContent='❌ Тўлиқ рақам киритинг: +998 90 000 00 00';return;}
+  if(!phone.startsWith('+998')){document.getElementById('phoneErr').textContent='Raqam +998 bilan boshlanishi kerak';return;}
+  if(phoneDigits.length!==12){document.getElementById('phoneErr').textContent='Toliq raqam kiriting: +998 90 000 00 00';return;}
   const r=S.restaurants.find(x=>x.id===S.currentPublicRestId);
-  if(!r){toast('Заведение не найдено');return;}
+  if(!r){toast('Zavedenie topilmadi');return;}
   const btn=document.getElementById('sendOrderBtn');
-  btn.disabled=true;btn.textContent='Текширяпмиз...';
+  btn.disabled=true;btn.textContent='Tekshiryapmiz...';
 
   const keys=Object.keys(S.cart);
   const total=cartTotal();
-  const unit=keys.length?S.cart[keys[0]].dish.priceUnit||'сум':'сум';
-  const newItems=keys.map(k=>({name:S.cart[k].dish.name,qty:S.cart[k].qty,price:S.cart[k].dish.price,unit:S.cart[k].dish.priceUnit||'сум'}));
+  const unit=keys.length?S.cart[keys[0]].dish.priceUnit||'sum':'sum';
+  const newItems=keys.map(k=>({name:S.cart[k].dish.name,qty:S.cart[k].qty,price:S.cart[k].dish.price,unit:S.cart[k].dish.priceUnit||'sum'}));
+  const normalizedPhone='+'+phoneDigits;
 
-  // ══ PENDING ZAKAZ BORMI TEKSHIR ══
-  const existingSaved=localStorage.getItem('mp_active_order');
-  if(existingSaved){
-    try{
-      const saved=JSON.parse(existingSaved);
-      if(Date.now()-saved.savedAt<2*60*60*1000){
-        const existDoc=await db.collection('orders').doc(saved.orderId).get();
-        if(existDoc.exists && ['pending','cooking','accepted'].includes(existDoc.data().status) && !existDoc.data().paid){
-          // ══ ESKI ZAKAZGA QO'SHISH ══
-          const existing=existDoc.data();
-          const now=Date.now();
-          const mergedItems=[...existing.items.map(i=>({...i,isNew:false}))];
-          const addedItems=[];
-          newItems.forEach(ni=>{
-            const found=mergedItems.find(ei=>ei.name===ni.name);
-            if(found){found.qty+=ni.qty;found.isNew=true;}
-            else{mergedItems.push({...ni,isNew:true});}
-            addedItems.push({...ni});
-          });
-          const newTotal=(existing.total||0)+total;
-          let addLines='';newItems.forEach(i=>{const p=parsePrice(i.price);addLines+='  ➕ '+i.name+' × '+i.qty+(p?' = '+formatPrice(p*i.qty,unit):'')+'\n';});
+  try{
+    const phoneVariants=Array.from(new Set([
+      normalizedPhone,
+      phone,
+      phoneDigits,
+      '+'+phoneDigits,
+      phone.replace(/\s/g,'')
+    ].filter(Boolean)));
+    const normalizedVariants=new Set(
+      phoneVariants
+        .map(v=>String(v).replace(/\D/g,''))
+        .filter(Boolean)
+    );
+    const activeStatuses=['pending','cooking','accepted','rejected'];
+    let existing=null;
 
-          await db.collection('orders').doc(saved.orderId).update({
-            items:mergedItems,
-            total:newTotal,
-            updatedAt:Date.now(),
-            // Oxirgi qo'shilgan blюdlar — Mini App uchun
-            lastAddedItems:newItems,
-            lastAddedAt:Date.now()
-          });
+    const snap=await db.collection('orders')
+      .where('restId','==',r.id)
+      .limit(200)
+      .get();
 
-          // Telegram ga bildirishnoma
-          const addText='➕ <b>ЗАКАЗГА ҚЎШИЛДИ!</b>  #'+saved.orderNum+'\n\n🏪 '+r.name+'\n📞 '+phone+'\n\n<b>Янги блюдлар:</b>\n'+addLines+'\n💰 <b>Янги жами: '+formatPrice(newTotal,unit)+'</b>\n\n🕐 '+new Date().toLocaleString('ru-RU');
-          await tgSendAddition(addText,saved.orderId,phone,r.tgToken,r.tgChatId);
+    const recentOrders=snap.docs
+      .map(doc=>({id:doc.id,...doc.data()}))
+      .sort((a,b)=>(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0));
 
-          btn.disabled=false;btn.textContent='✅ Буюртмани юбориш';
-          closeCart();S.cart={};updateCartUI();
-          const ac=document.querySelector('.pm-cat.active');
-          renderPMContent(r,ac&&ac.textContent!=='Все'?ac.textContent:null);
-          toast('✅ Заказга '+newItems.length+' та блюд қўшилди!');
-          // Bubble yangilash
-          _restoreOrderBubble(saved.orderId,saved.orderNum,'pending');
-          listenOrderStatus(saved.orderId);
-          return;
+    existing=recentOrders.find(order=>{
+      if(!activeStatuses.includes(order.status)) return false;
+      if(order.hiddenInApp) return false;
+      if(order.paid===true) return false;
+      const orderPhoneDigits=String(order.phone||'').replace(/\D/g,'');
+      return normalizedVariants.has(orderPhoneDigits);
+    })||null;
+
+    if(existing){
+      const mergedItems=[...(existing.items||[]).map(i=>({...i,isNew:false}))];
+      newItems.forEach(ni=>{
+        const found=mergedItems.find(ei=>ei.name===ni.name);
+        if(found){
+          found.qty=(found.qty||0)+ni.qty;
+          found.isNew=true;
+        }else{
+          mergedItems.push({...ni,isNew:true});
         }
-      }
-    }catch(e){console.log('merge check:',e);}
+      });
+
+      const now=Date.now();
+      const newTotal=(existing.total||0)+total;
+      let addLines='';newItems.forEach(i=>{const p=parsePrice(i.price);addLines+='  + '+i.name+' x '+i.qty+(p?' = '+formatPrice(p*i.qty,unit):'')+'\n';});
+
+      await db.collection('orders').doc(existing.id).update({
+        items:mergedItems,
+        total:newTotal,
+        updatedAt:now,
+        lastAddedItems:newItems,
+        lastAddedAt:now,
+        phone:normalizedPhone,
+        paid:existing.paid===true
+      });
+
+      const addText='<b>ZAKAZGA QOSHILDI</b> #'+existing.orderNum+'\n\n'+r.name+'\n'+normalizedPhone+'\n\n<b>Yangi mahsulotlar:</b>\n'+addLines+'\n<b>Yangi jami: '+formatPrice(newTotal,unit)+'</b>\n\n'+new Date().toLocaleString('ru-RU');
+      await tgSendAddition(addText,existing.id,normalizedPhone,r.tgToken,r.tgChatId);
+
+      btn.disabled=false;btn.textContent='Buyurtmani yuborish';
+      closeCart();S.cart={};updateCartUI();
+      renderPMContent(r,null);
+      toast('Buyurtmaga '+newItems.length+' ta mahsulot qoshildi');
+      saveActiveOrder(existing.id,existing.orderNum,r.id);
+      _restoreOrderBubble(existing.id,existing.orderNum,existing.status||'pending');
+      listenOrderStatus(existing.id);
+      return;
+    }
+  }catch(e){
+    console.log('merge check:',e);
   }
 
-  // ══ YANGI ZAKAZ ══
-  btn.textContent='Отправляем...';
-  let lines='';newItems.forEach(i=>{const p=parsePrice(i.price);lines+='  • '+i.name+' × '+i.qty+(p?' = '+formatPrice(p*i.qty,unit):'')+'\n';});
+  btn.textContent='Yuboryapmiz...';
+  let lines='';newItems.forEach(i=>{const p=parsePrice(i.price);lines+='  * '+i.name+' x '+i.qty+(p?' = '+formatPrice(p*i.qty,unit):'')+'\n';});
   const orderNum=await getNextOrderNumber(r.id);
   const orderId='order_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-  const orderData={id:orderId,restId:r.id,restName:r.name,phone,orderNum,items:newItems,total,unit,status:'pending',createdAt:Date.now()};
-  try{await db.collection('orders').doc(orderId).set(orderData);}catch(e){toast('Ошибка сохранения заказа');btn.disabled=false;btn.textContent='✅ Буюртмани юбориш';return;}
-  const text='🛒 <b>ЯНГИ ЗАКАЗ!</b>  #'+orderNum+'\n\n🏪 '+r.name+'\n📞 <b>'+phone+'</b>\n\n📋 <b>Заказ:</b>\n'+lines+'\n💰 <b>Итого: '+(total?formatPrice(total,unit):'—')+'</b>\n\n🕐 '+new Date().toLocaleString('ru-RU');
-  await tgSendOrder(text,orderId,phone,r.tgToken,r.tgChatId);
-  btn.disabled=false;btn.textContent='✅ Буюртмани юбориш';
+  const orderData={id:orderId,restId:r.id,restName:r.name,phone:normalizedPhone,orderNum,items:newItems,total,unit,status:'pending',paid:false,createdAt:Date.now()};
+
+  try{
+    await db.collection('orders').doc(orderId).set(orderData);
+  }catch(e){
+    toast('Zakazni saqlashda xato');
+    btn.disabled=false;btn.textContent='Buyurtmani yuborish';
+    return;
+  }
+
+  const text='<b>YANGI ZAKAZ</b> #'+orderNum+'\n\n'+r.name+'\n'+normalizedPhone+'\n\n<b>Zakaz:</b>\n'+lines+'\n<b>Jami: '+(total?formatPrice(total,unit):'-')+'</b>\n\n'+new Date().toLocaleString('ru-RU');
+  await tgSendOrder(text,orderId,normalizedPhone,r.tgToken,r.tgChatId);
+  btn.disabled=false;btn.textContent='Buyurtmani yuborish';
   closeCart();S.cart={};updateCartUI();
-  const ac=document.querySelector('.pm-cat.active');
-  renderPMContent(r,ac&&ac.textContent!=='Все'?ac.textContent:null);
+  renderPMContent(r,null);
   saveActiveOrder(orderId,orderNum,r.id);
   showOrderModal(orderId,orderNum);
   listenOrderStatus(orderId);
+}
+
+async function markAsPaid(orderId){
+  try{
+    await db.collection('orders').doc(orderId).update({
+      paid:true,
+      paidAt:Date.now()
+    });
+    return true;
+  }catch(e){
+    console.error('markAsPaid:',e);
+    return false;
+  }
 }
 
 // Telegram ga faqat qo'shilgan ma'lumot + bildirishnoma (tugmalarsiz)
@@ -1214,7 +1259,8 @@ async function tgSendAddition(text,orderId,phone,token,chatId){
   // Tugmalar: faqat qabul/rad + tayyorlanmoqda
   const keyboard={inline_keyboard:[
     [{text:'✅ Қабул',callback_data:'accept_'+phone+'_'+orderId},{text:'🍳 Тайёрлаяпман',callback_data:'cook_'+phone+'_'+orderId}],
-    [{text:'❌ Рад этиш',callback_data:'reject_'+phone+'_'+orderId}]
+    [{text:'❌ Рад этиш',callback_data:'reject_'+phone+'_'+orderId}],
+    [{text:"💰 To'landi",callback_data:'paid_'+phone+'_'+orderId}]
   ]};
   try{
     await fetch('https://api.telegram.org/bot'+tok+'/sendMessage',{
@@ -1604,3 +1650,5 @@ loadData();
 </div></div>
 </body>
 </html>
+
+
